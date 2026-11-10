@@ -4,7 +4,10 @@
 
 ## 起動方法
 
-`cassette-j-card-studio.html` をブラウザー（Chrome推奨）で開いてください。ファイル1つで動作します。
+[https://eiraruinveil.github.io/Cassette-J-Card-Studio/](https://eiraruinveil.github.io/Cassette-J-Card-Studio/)
+を開いてください。HTMLファイル1つで動作するアプリで、画像処理はブラウザー内で行われます。
+
+リポジトリ：[https://github.com/EiraRuinveil/Cassette-J-Card-Studio](https://github.com/EiraRuinveil/Cassette-J-Card-Studio)
 
 ## テンプレート（型）
 
@@ -20,9 +23,14 @@
 - おもて面とうら面は同じ紙の表裏です。並びは、おもて面が「フラップ｜背｜メイン」、うら面が「メイン｜背｜フラップ」で、折ると背どうし・フラップどうしが重なります。
 - 型を切り替えると、デザインはそのまま引き継がれ、文字・画像レイヤーの位置は比率に合わせて拡縮されます。選んだ型はブラウザーとプロジェクトファイルに保存されます。
 
-それぞれの部位の名称が書かれたテンプレートも用意してあります。良ければご活用ください。
-[ショートフラップ型](jcard_shortflap_front_.json)
-[ロングフラップ型](jcard_longflap_front_.json)
+### テンプレートファイル
+
+各部位の名前が入ったテンプレートを用意しています。テスト印刷などにお使いください。
+アプリのカード5「テンプレート読込」ボタンから直接読み込むこともできます。下記のファイルをダウンロードし、「プロジェクト読込」から開くこともできます。
+
+[ショートフラップ型テンプレート](jcard_shortflap_front_.json)
+
+[ロングフラップ型テンプレート](jcard_longflap_front_.json)
 
 ## 操作
 
