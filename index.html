@@ -17,6 +17,9 @@
   header h1 .en{color:var(--accent)}
   header p{margin:0;color:var(--sub);font-size:13px}
   #buildStamp{margin-left:auto;color:var(--sub);font-size:12px}
+  .langBtns{margin-left:12px;display:inline-flex;gap:4px}
+  .langBtn{border:1px solid var(--line);background:#fff;border-radius:999px;padding:2px 10px;font-size:12px;cursor:pointer;color:var(--sub)}
+  .langBtn.active{background:#3c4048;color:#fff;border-color:#3c4048}
   main{display:flex;gap:16px;padding:6px 20px 14px;align-items:stretch;height:calc(100vh - 60px);height:calc(100dvh - 60px)}
   .previewCol{flex:none;width:min(712px,100%);min-width:300px;display:flex;flex-direction:column}
   .printGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px;margin:6px 0}
@@ -101,7 +104,8 @@ span[id$="Val"]{ cursor:pointer; border-bottom:1px dotted #8a8f98; }
 <header>
   <h1><span class="en">Cassette J Card Studio</span> カセットテープ Jカード作成</h1>
   <p id="sizeInfo">全体 1053 × 1218 px（300 DPI ＝ 89.15 × 103.12 mm）／ メイン 723px ・ 背 153px ・ 裏表紙 177px</p>
-  <span id="buildStamp">Build 2026-11-10 · v39</span>
+  <span class="langBtns"><button type="button" id="langJa" class="langBtn active">日本語</button><button type="button" id="langEn" class="langBtn">English</button></span>
+  <span id="buildStamp">Build 2026-11-10 · v40</span>
 </header>
 <main>
   <section class="previewCol">
@@ -362,12 +366,12 @@ function applyTemplate(key, scale){
   }
   { const flapMm = (PANELS.front[0].w * 25.4 / 300).toFixed(1).replace(/\.0$/, '');
     for (const opt of $('tlPanel').options){
-      if (opt.value === 'back_flap') opt.textContent = `裏表紙フラップ・うら（${flapMm}mm）`;
-      if (opt.value === 'front_flap') opt.textContent = `裏表紙フラップ・おもて（表面・${flapMm}mm）`;
+      if (opt.value === 'back_flap') opt.textContent = L(`裏表紙フラップ・うら（${flapMm}mm）`, `Rear flap — back (${flapMm}mm)`);
+      if (opt.value === 'front_flap') opt.textContent = L(`裏表紙フラップ・おもて（表面・${flapMm}mm）`, `Rear flap — front (${flapMm}mm)`);
     } }
-  { const pp = $('printPaper'); if (pp && pp.options[1]) pp.options[1].textContent = `カード実寸（${MM_W.toFixed(1)}×${MM_H.toFixed(1)}mm）`; }
+  { const pp = $('printPaper'); if (pp && pp.options[1]) pp.options[1].textContent = L(`カード実寸（${MM_W.toFixed(1)}×${MM_H.toFixed(1)}mm）`, `Card size (${MM_W.toFixed(1)}×${MM_H.toFixed(1)}mm)`); }
   $('tplSel').value = key;
-  $('sizeInfo').textContent = `全体 ${W} × ${H} px（300 DPI ＝ ${MM_W} × ${MM_H} mm）／ メイン ${PANELS.front[2].w}px ・ 背 ${PANELS.front[1].w}px ・ 裏表紙 ${PANELS.front[0].w}px`;
+  $('sizeInfo').textContent = L(`全体 ${W} × ${H} px（300 DPI ＝ ${MM_W} × ${MM_H} mm）／ メイン ${PANELS.front[2].w}px ・ 背 ${PANELS.front[1].w}px ・ 裏表紙 ${PANELS.front[0].w}px`, `Total ${W} × ${H} px (300 DPI = ${MM_W} × ${MM_H} mm) / Main ${PANELS.front[2].w}px · Spine ${PANELS.front[1].w}px · Rear flap ${PANELS.front[0].w}px`);
   try { localStorage.setItem('jcard-template', key); } catch(e) {}
   setSide(state.side);
   if (autoFit) fitZoom();
@@ -376,11 +380,11 @@ function applyTemplate(key, scale){
 function defaultPanel(){ return { bg:'#ffffff', img:null, fit:'cover', scale:1, dx:0, dy:0, rot:0 }; }
 const FONT_GOTHIC = `'Hiragino Kaku Gothic ProN','Hiragino Sans','Yu Gothic',sans-serif`;
 const BASE_FONTS = [
-  { label:'ゴシック', value:FONT_GOTHIC },
-  { label:'明朝', value:`'Hiragino Mincho ProN','Yu Mincho',serif` },
-  { label:'丸ゴシック風', value:`'Hiragino Maru Gothic ProN','Yu Gothic',sans-serif` },
-  { label:'等幅（タイプライター風）', value:`'Courier New',monospace` },
-  { label:'極太（Arial Black系）', value:`Impact,'Arial Black',sans-serif` },
+  { label:'ゴシック', labelEn:'Sans-serif (Gothic)', value:FONT_GOTHIC },
+  { label:'明朝', labelEn:'Serif (Mincho)', value:`'Hiragino Mincho ProN','Yu Mincho',serif` },
+  { label:'丸ゴシック風', labelEn:'Rounded sans', value:`'Hiragino Maru Gothic ProN','Yu Gothic',sans-serif` },
+  { label:'等幅（タイプライター風）', labelEn:'Monospace (typewriter)', value:`'Courier New',monospace` },
+  { label:'極太（Arial Black系）', labelEn:'Extra bold (Arial Black-like)', value:`Impact,'Arial Black',sans-serif` },
 ];
 const state = {
   side:'front',
@@ -402,6 +406,172 @@ const state = {
 ALL_PANEL_IDS.forEach(id => state.panels[id] = defaultPanel());
 
 const $ = id => document.getElementById(id);
+
+/* ---------- i18n (ja / en) ---------- */
+let LANG = 'ja';
+try { LANG = localStorage.getItem('jcard-lang') === 'en' ? 'en' : 'ja'; } catch(e) {}
+const L = (ja, en) => LANG === 'en' ? en : ja;
+const PANEL_EN = { front_flap:'Rear flap', front_spine:'Spine', front_main:'Front cover', back_main:'Back', back_spine:'Spine (back)', back_flap:'Rear flap (back)' };
+const pname = def => LANG === 'en' ? (PANEL_EN[def.id] || def.name) : def.name;
+const EN_TEXT = {
+'カセットテープ Jカード作成':'Cassette Tape J-Card Maker',
+'型':'Style',
+'ショートフラップ型（フラップ15mm）':'Short flap (15mm flap)',
+'ロングフラップ型（フラップ25.4mm）':'Long flap (25.4mm flap)',
+'おもて面':'Front side',
+'うら面':'Back side',
+'両面プレビュー':'Both-sides preview',
+'画面に合わせる':'Fit to screen',
+'ズーム':'Zoom',
+'折り線・ガイド表示':'Show fold lines & guides',
+'パネルを選んで画像・文字を入れる':'Choose a panel — add image & text',
+'背景色':'Background color',
+'この面の全パネルに':'To all panels on this side',
+'画像':'Image',
+'はめ方':'Fit',
+'パネルを埋める（切り抜き）':'Fill the panel (crop)',
+'全体を表示（余白あり）':'Show whole image (margins)',
+'パネルに引き伸ばし':'Stretch to panel',
+'拡大率':'Scale',
+'回転':'Rotation',
+'画像はプレビュー上でドラッグして位置を動かせます。\nShiftキーを押しながらドラッグすると、縦または横にまっすぐだけ動かせます。選択中は矢印キーでも動かせます（Shift＋矢印で10px）。':'Drag the image on the preview to move it.\nHold Shift while dragging to move straight vertically or horizontally only. When selected, the arrow keys also move it (Shift + arrows = 10px).',
+'位置・拡大をリセット':'Reset position & scale',
+'画像を削除':'Remove image',
+'この部位に文字を追加':'Add text to this panel',
+'追加':'Add',
+'選んでいる部位の中央に文字が入ります（改行できます。「追加」ボタンか Ctrl+Enter で追加）。大きさ・色・フォント・回転などは、カード3の「レイヤー」欄で調整できます。プレビューをダブルクリックしても、ここに文字を入れられます。':'Text is placed at the center of the selected panel (line breaks allowed — use the Add button or Ctrl+Enter). Adjust size, color, font and rotation in card 3, “Layers”. Double-clicking the preview also lets you add text here.',
+'背のタイトル（おもて面）':'Spine text (front side)',
+'タイトル':'Title',
+'アーティスト':'Artist',
+'タイトルの文字サイズ':'Title size',
+'アーティストの文字サイズ':'Artist size',
+'文字色':'Text color',
+'向き':'Direction',
+'下から上へ読む（回転）':'Reads bottom-up (rotated)',
+'上から下へ読む（回転）':'Reads top-down (rotated)',
+'タイトルのフォント':'Title font',
+'アーティストのフォント':'Artist font',
+'カタログのフォント':'Catalog font',
+'字間':'Letter spacing',
+'タイトルの位置':'Title position',
+'アーティストの位置':'Artist position',
+'カタログ番号':'Catalog number',
+'カタログの位置':'Catalog position',
+'カタログの文字サイズ':'Catalog size',
+'背部分を塗りつぶす（おもて／うら両方の背）':'Fill the spine area (spines on both sides)',
+'塗りの色':'Fill color',
+'透明度':'Opacity',
+'背の背景色は、パネル選択で「背」を選んで背景色を変えてください。\n文字サイズは指定どおりの大きさで描かれます（自動縮小なし）。長すぎる場合は両端がはみ出すので、文字サイズ・字間・位置で調整してください。\n背の文字はプレビュー上で直接ドラッグしても動かせます（上下＝背の方向だけ。横は常に中央です）。選択中は↑↓キーでも動かせます。位置は「下方向がプラス」で、向き（回転）を変えても位置はそのまま保たれます。回転モードでは、アーティストとタイトルを1行に並べて背の中央に表示します（並びはアーティスト→タイトル、位置はそれぞれの位置スライダー・ドラッグで別々に動かせます）。\n塗りつぶしは、背の画像・背景の上に指定色を重ねます（文字はその上に描かれます）。':'To change the spine background color, choose the Spine panel in card 1 and change its background color.\nText is drawn at exactly the size you set (no auto-shrink). If it is too long it overflows both ends — adjust size, letter spacing or position.\nYou can also drag spine text directly on the preview (along the spine only; it stays centered across the spine). When selected, the ↑↓ keys move it too. Positions are “plus = downward” and are kept when you change the direction. In rotated mode the artist and title are shown on one line centered across the spine (order: artist → title; each moves independently with its position slider or by dragging).\nThe fill is drawn over the spine image/background, with the text on top.',
+'レイヤー（文字・画像・フォント）':'Layers (text, images, fonts)',
+'フォント読込':'Load font',
+'フォントファイル（TTF / OTF / WOFF / WOFF2）を読み込むと、背・文字レイヤー・曲目リストで選べます。プロジェクトにも保存されます。\nWindowsのフォントは C:\\Windows\\Fonts の中にあります。':'Load a font file (TTF / OTF / WOFF / WOFF2) to use it for the spine, text layers and the track list. Loaded fonts are also saved in the project file.\nWindows fonts are stored in C:\\Windows\\Fonts.',
+'パスをコピー':'Copy path',
+'画像レイヤーを追加':'Add an image layer',
+'画像レイヤー':'Image layer',
+'画像レイヤーはロゴやイラストなどを自由な位置・大きさで重ねられます（パネル全体の画像とは別です）。':'Image layers overlay logos or artwork at any position and size (separate from the panel image).',
+'文字を追加（選択中の部位の中央に入ります）':'Add text (goes to the center of the selected panel)',
+'レイヤー一覧（クリックで選択）':'Layers (click to select)',
+'上のレイヤー一覧かプレビューでレイヤーを選ぶと、ここで編集できます':'Select a layer from the list above or on the preview to edit it here',
+'画像の幅':'Image width',
+'前面へ':'Bring to front',
+'背面へ':'Send to back',
+'この画像を削除':'Delete this image',
+'内容':'Text',
+'サイズ':'Size',
+'書き方向':'Writing mode',
+'横書き':'Horizontal',
+'縦書き（文字を縦に積む）':'Vertical (stacked)',
+'色':'Color',
+'太さ':'Weight',
+'通常':'Regular',
+'太字':'Bold',
+'フォント':'Font',
+'この文字を削除':'Delete this text',
+'文字も画像レイヤーも、プレビュー上でドラッグして動かせます。クリックで選択できます。\nShiftキーを押しながらドラッグすると縦・横にまっすぐだけ移動でき、選択中は矢印キーでも動かせます（Shift＋矢印で10px）。':'Text and image layers can be dragged on the preview. Click to select.\nHold Shift while dragging to move straight vertically or horizontally; when selected, the arrow keys also move it (Shift + arrows = 10px).',
+'曲目リスト':'Track list',
+'表示する':'Show',
+'表示する場所':'Place on',
+'うら面メイン':'Back main panel',
+'裏表紙フラップ・うら（15mm）':'Rear flap — back (15mm)',
+'裏表紙フラップ・おもて（表面・15mm）':'Rear flap — front (15mm)',
+'文字を入力すると自動で表示ONになり、プレビューが選んだ場所の面に切り替わります。隠したいときはチェックを外してください。細いフラップに置くときは、文字サイズを小さめにすると収まります。回転を90°にすると、フラップの縦方向に沿って読めます。':'Typing text turns it on automatically and switches the preview to the side it is placed on. Uncheck “Show” to hide it. On a narrow flap, a smaller text size fits better. Set the rotation to 90° to read along the flap.',
+'文字サイズ':'Text size',
+'書き出し・印刷・保存':'Export, print & save',
+'書き出し':'Export',
+'「書き出し」を押すとダイアログが開き、形式（PDF／PNG／JPG／印刷）と用紙サイズ・出力内容を選んで、プレビューで確認してから書き出せます。印刷のサイズ補正・A4配置・点線ガイドの設定もダイアログの中にあります。':'“Export” opens a dialog: choose the format (PDF / PNG / JPG / Print) and the paper / contents, check the preview, then export. The print size adjustment, A4 layout and dashed guide settings are also in the dialog.',
+'プロジェクト保存':'Save project',
+'プロジェクト読込':'Load project',
+'テンプレート読込：':'Templates:',
+'ショートフラップ型':'Short flap',
+'ロングフラップ型':'Long flap',
+'テンプレートはGitHubから直接読み込みます（今のデザインは置き換わります）。':'Templates load directly from GitHub (your current design will be replaced).',
+'GitHub / README（使い方・テンプレートのダウンロード）':'GitHub / README (guide & template downloads)',
+'両面プレビュー（折ると背を中心に左右が重なります）':'Both sides (when folded, the two sides meet at the spine)',
+'閉じる':'Close',
+'形式':'Format',
+'用紙サイズ・出力内容':'Paper / contents',
+'折り線（パネルの境目）':'Fold lines (panel borders)',
+'入れる（色反転の点線）':'Include (inverted dashes)',
+'入れない':'Do not include',
+'印刷の用紙':'Print paper',
+'A4に実寸で配置':'Place at actual size on A4',
+'カード実寸（89.2×103.1mm）':'Card size (89.2×103.1mm)',
+'サイズ補正（mm）':'Size adjustment (mm)',
+'ブラウザ印刷が実寸より大きく出る分を引く補正（初期値 -0.5、自動保存。印刷のみ）':'Compensates for browsers printing larger than actual size (default −0.5, saved automatically; print only)',
+'A4の配置':'A4 layout',
+'1個':'1 copy',
+'2個（同じデザイン×2）':'2 copies (same design ×2)',
+'切り取りガイド（点線）':'Cut guides (dashed)',
+'出す（色反転）':'Include (inverted)',
+'出さない':'Do not include',
+'書き出す':'Export',
+};
+const EN_PH = {
+'この部位に入れる文字（改行できます）':'Text for this panel (line breaks OK)',
+'アルバム名など':'Album title',
+'アーティスト名':'Artist name',
+'例：ABC-000（任意）':'e.g. ABC-000 (optional)',
+'追加する文字':'Text to add',
+};
+let jaSnapshot = null;
+function snapshotJa(){
+  jaSnapshot = [];
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  let n;
+  while ((n = walker.nextNode())){ if (n.nodeValue.trim()) jaSnapshot.push([n, n.nodeValue]); }
+  jaSnapshot.ph = [];
+  document.querySelectorAll('[placeholder]').forEach(el => jaSnapshot.ph.push([el, el.getAttribute('placeholder')]));
+}
+function catPosText(v){ return L(`下端から${v}px`, `${v}px from the bottom`); }
+function applyLang(l){
+  LANG = l;
+  try { localStorage.setItem('jcard-lang', l); } catch(e) {}
+  document.documentElement.lang = l;
+  document.title = l === 'en' ? 'Cassette J Card Studio — Cassette Tape J-Card Maker' : 'Cassette J Card Studio — カセットテープ Jカード作成';
+  if (!jaSnapshot) snapshotJa();
+  for (const [node, orig] of jaSnapshot){
+    if (l === 'ja'){ node.nodeValue = orig; continue; }
+    const en = EN_TEXT[orig.trim()];
+    if (en !== undefined){
+      const lead = (orig.match(/^\s*/) || [''])[0];
+      const tail = (orig.match(/\s*$/) || [''])[0];
+      node.nodeValue = lead + en + tail;
+    }
+  }
+  for (const [el, orig] of jaSnapshot.ph) el.setAttribute('placeholder', l === 'ja' ? orig : (EN_PH[orig] || orig));
+  document.querySelectorAll('input[type="range"]').forEach(r => {
+    const span = document.getElementById(r.id + 'Val') || document.getElementById(r.id.replace(/Range$/, '') + 'Val');
+    if (span) span.title = L('クリックで数値を直接入力', 'Click to type a value');
+  });
+  $('langJa').classList.toggle('active', l === 'ja');
+  $('langEn').classList.toggle('active', l === 'en');
+  applyTemplate(curTpl, false);
+  syncTextEdit();
+  syncSpinePosUI();
+  refreshFontSelects();
+  refreshExpDialog();
+}
+
 const stage = $('stage'), ctx = stage.getContext('2d');
 
 function panelDef(side, id){ return PANELS[side].find(p => p.id === id); }
@@ -640,7 +810,7 @@ function render(c, side, opts = {}){
     // panel labels
     c.textAlign = 'left'; c.textBaseline = 'top';
     for (const def of PANELS[side]){
-      const label = `${def.name} ${def.w}px`;
+      const label = `${pname(def)} ${def.w}px`;
       let fs = 25;
       c.font = `700 ${fs}px 'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif`;
       while (fs > 13 && c.measureText(label).width > def.w - 40){ fs -= 2; c.font = `700 ${fs}px 'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif`; }
@@ -786,8 +956,8 @@ function buildA4PageCanvas(side){
 /* pages for the current export-dialog selection: [{label, canvas, wMm, hMm}] */
 function buildExportPages(){
   const fmt = $('expFormat').value, content = $('expContent').value;
-  const cardPage = (side) => ({ label: side === 'front' ? 'おもて面' : 'うら面', canvas: renderToCanvas(side), wMm: MM_W, hMm: MM_H });
-  const a4Page = (side) => ({ label: (side === 'front' ? 'おもて面' : 'うら面') + '・A4', canvas: buildA4PageCanvas(side), wMm: 210, hMm: 297 });
+  const cardPage = (side) => ({ label: side === 'front' ? L('おもて面', 'Front') : L('うら面', 'Back'), side, canvas: renderToCanvas(side), wMm: MM_W, hMm: MM_H });
+  const a4Page = (side) => ({ label: (side === 'front' ? L('おもて面', 'Front') : L('うら面', 'Back')) + ' · A4', side, canvas: buildA4PageCanvas(side), wMm: 210, hMm: 297 });
   if (fmt === 'print'){
     const sides = content === 'both' ? ['front','back'] : content === 'current' ? [state.side] : [content];
     return $('printPaper').value === 'a4' ? sides.map(a4Page) : sides.map(cardPage);
@@ -809,10 +979,10 @@ function refreshFontSelects(){
     const cur = sel.value;
     sel.innerHTML = '';
     for (const f of BASE_FONTS){
-      const o = document.createElement('option'); o.value = f.value; o.textContent = f.label; sel.appendChild(o);
+      const o = document.createElement('option'); o.value = f.value; o.textContent = LANG === 'en' ? (f.labelEn || f.label) : f.label; sel.appendChild(o);
     }
     if (state.customFonts.length){
-      const g = document.createElement('optgroup'); g.label = '読み込んだフォント';
+      const g = document.createElement('optgroup'); g.label = L('読み込んだフォント', 'Loaded fonts');
       for (const f of state.customFonts){
         const o = document.createElement('option'); o.value = fontValueFor(f.name); o.textContent = f.name; g.appendChild(o);
       }
@@ -844,12 +1014,12 @@ function refreshPanelBtns(){
     const b = document.createElement('button');
     b.type = 'button';
     b.className = def.id === state.selectedPanel ? 'active' : '';
-    b.innerHTML = `<span>${def.name}</span><span class="dim">${def.w}px ＝ ${(def.w/300*25.4).toFixed(1)}mm</span>`;
+    b.innerHTML = `<span>${pname(def)}</span><span class="dim">${def.w}px ＝ ${(def.w/300*25.4).toFixed(1)}mm</span>`;
     b.onclick = () => { state.selectedPanel = def.id; state.selectedText = null; state.selectedImgLayer = null; refreshPanelBtns(); syncPanelControls(); renderMain(); refreshTextList(); };
     wrap.appendChild(b);
   }
   const cur = PANELS[state.side].find(p => p.id === state.selectedPanel);
-  if (cur){ $('panelTarget').textContent = `選択中の部位：${cur.name}（${state.side === 'front' ? 'おもて面' : 'うら面'}）― 画像と文字の追加先`; $('panelText').placeholder = cur.name + 'に入れる文字（改行できます）'; }
+  if (cur){ $('panelTarget').textContent = L(`選択中の部位：${cur.name}（${state.side === 'front' ? 'おもて面' : 'うら面'}）― 画像と文字の追加先`, `Selected panel: ${pname(cur)} (${state.side === 'front' ? 'Front side' : 'Back side'}) — target for images and text`); $('panelText').placeholder = L(cur.name + 'に入れる文字（改行できます）', `Text for ${pname(cur)} (line breaks OK)`); }
 }
 function syncPanelControls(){
   const p = state.panels[state.selectedPanel];
@@ -871,8 +1041,8 @@ function setSide(side){
   const LP = PANELS[side];
   const mmOf = px => (px * 25.4 / 300).toFixed(1);
   $('layoutNote').textContent = side === 'front'
-    ? `おもて面の並び（左→右）： ${LP[0].name} ${LP[0].w}px（${mmOf(LP[0].w)}mm）｜ ${LP[1].name} ${LP[1].w}px（${mmOf(LP[1].w)}mm）｜ ${LP[2].name} ${LP[2].w}px（${mmOf(LP[2].w)}mm）\n高さ ${H}px ＝ ${mmOf(H)}mm。赤枠は切り取り線、破線は折り線です（書き出しには入りません）。`
-    : `うら面の並び（左→右）： ${LP[0].name} ${LP[0].w}px（${mmOf(LP[0].w)}mm）｜ ${LP[1].name} ${LP[1].w}px（${mmOf(LP[1].w)}mm）｜ ${LP[2].name} ${LP[2].w}px（${mmOf(LP[2].w)}mm）\nおもて面と左右が逆になります（同じ紙の裏側なので、折ると背どうし・フラップどうしが重なります）。`;
+    ? L(`おもて面の並び（左→右）： ${LP[0].name} ${LP[0].w}px（${mmOf(LP[0].w)}mm）｜ ${LP[1].name} ${LP[1].w}px（${mmOf(LP[1].w)}mm）｜ ${LP[2].name} ${LP[2].w}px（${mmOf(LP[2].w)}mm）\n高さ ${H}px ＝ ${mmOf(H)}mm。赤枠は切り取り線、破線は折り線です（書き出しには入りません）。`, `Front side, left to right: ${pname(LP[0])} ${LP[0].w}px (${mmOf(LP[0].w)}mm) | ${pname(LP[1])} ${LP[1].w}px (${mmOf(LP[1].w)}mm) | ${pname(LP[2])} ${LP[2].w}px (${mmOf(LP[2].w)}mm)\nHeight ${H}px = ${mmOf(H)}mm. The red outline is the cut line; dashed lines are fold lines (stage guides).`)
+    : L(`うら面の並び（左→右）： ${LP[0].name} ${LP[0].w}px（${mmOf(LP[0].w)}mm）｜ ${LP[1].name} ${LP[1].w}px（${mmOf(LP[1].w)}mm）｜ ${LP[2].name} ${LP[2].w}px（${mmOf(LP[2].w)}mm）\nおもて面と左右が逆になります（同じ紙の裏側なので、折ると背どうし・フラップどうしが重なります）。`, `Back side, left to right: ${pname(LP[0])} ${LP[0].w}px (${mmOf(LP[0].w)}mm) | ${pname(LP[1])} ${LP[1].w}px (${mmOf(LP[1].w)}mm) | ${pname(LP[2])} ${LP[2].w}px (${mmOf(LP[2].w)}mm)\nThis is the reverse of the front (the other side of the same sheet), so when folded, the spines and flaps meet.`);
   refreshPanelBtns(); syncPanelControls(); refreshTextList(); renderMain();
 }
 $('tabFront').onclick = () => setSide('front');
@@ -947,7 +1117,7 @@ $('spineSpacing').oninput = e => { state.spine.spacing = +e.target.value; $('spi
 $('spineTitlePos').oninput = e => { state.spine.titlePos = +e.target.value; $('spineTitlePosVal').textContent = e.target.value + 'px'; renderMain(); };
 $('spineArtistPos').oninput = e => { state.spine.artistPos = +e.target.value; $('spineArtistPosVal').textContent = e.target.value + 'px'; renderMain(); };
 $('spineCatalog').oninput = e => { state.spine.catalog = e.target.value; renderMain(); };
-$('spineCatPos').oninput = e => { state.spine.catPos = +e.target.value; $('spineCatPosVal').textContent = '下端から' + e.target.value + 'px'; renderMain(); };
+$('spineCatPos').oninput = e => { state.spine.catPos = +e.target.value; $('spineCatPosVal').textContent = catPosText(e.target.value); renderMain(); };
 $('spineCatSize').oninput = e => { state.spine.catalogSize = +e.target.value; $('spineCatSizeVal').textContent = e.target.value + 'px'; renderMain(); };
 $('fillOn').onchange = e => { state.spineFill.on = e.target.checked; renderMain(); };
 $('fillColor').oninput = e => { state.spineFill.color = e.target.value; renderMain(); };
@@ -988,8 +1158,8 @@ $('fontFile').onchange = e => {
     const ok = await registerFont(name, rd.result);
     refreshFontSelects();
     $('fontStatus').textContent = ok
-      ? `フォント「${name}」を読み込みました。背・文字レイヤー・曲目リストのフォント欄で選べます。プロジェクトにも保存されます。`
-      : `フォント「${name}」の登録に失敗しました。対応形式は TTF / OTF / WOFF / WOFF2 です。`;
+      ? L(`フォント「${name}」を読み込みました。背・文字レイヤー・曲目リストのフォント欄で選べます。プロジェクトにも保存されます。`, `Font “${name}” loaded. You can select it for the spine, text layers and the track list. It is also saved in the project.`)
+      : L(`フォント「${name}」の登録に失敗しました。対応形式は TTF / OTF / WOFF / WOFF2 です。`, `Could not register the font “${name}”. Supported formats: TTF / OTF / WOFF / WOFF2.`);
     renderMain();
   };
   rd.readAsDataURL(f);
@@ -1005,14 +1175,14 @@ function refreshTextList(){
   const wrap = $('textList'); wrap.innerHTML = '';
   for (const t of state.texts[state.side]){
     const b = document.createElement('button');
-    b.type = 'button'; b.textContent = '文字：' + (t.text || '(空)');
+    b.type = 'button'; b.textContent = L('文字：', 'Text: ') + (t.text || L('(空)', '(empty)'));
     b.className = state.selectedText === t.id ? 'active' : '';
     b.onclick = () => { state.selectedText = t.id; state.selectedImgLayer = null; syncTextEdit(); refreshTextList(); renderMain(); };
     wrap.appendChild(b);
   }
   for (const l of state.imgLayers[state.side]){
     const b = document.createElement('button');
-    b.type = 'button'; b.textContent = '画像：' + (l.name || '画像レイヤー');
+    b.type = 'button'; b.textContent = L('画像：', 'Image: ') + (l.name || L('画像レイヤー', 'Image layer'));
     b.className = state.selectedImgLayer === l.id ? 'active' : '';
     b.onclick = () => { state.selectedImgLayer = l.id; state.selectedText = null; syncTextEdit(); refreshTextList(); renderMain(); };
     wrap.appendChild(b);
@@ -1034,9 +1204,9 @@ function syncTextEdit(){
   }
   const l = selectedImgLayerObj();
   const head = $('layerEditHead'), box = $('layerEditBox');
-  if (t){ head.textContent = '編集中：文字「' + (t.text || '(空)') + '」'; head.className = 'editHead'; box.classList.add('active'); }
-  else if (l){ head.textContent = '編集中：画像「' + (l.name || '画像レイヤー') + '」'; head.className = 'editHead'; box.classList.add('active'); }
-  else { head.textContent = '上のレイヤー一覧かプレビューでレイヤーを選ぶと、ここで編集できます'; head.className = 'editHead idle'; box.classList.remove('active'); }
+  if (t){ head.textContent = L('編集中：文字「' + (t.text || '(空)') + '」', 'Editing: text “' + (t.text || '(empty)') + '”'); head.className = 'editHead'; box.classList.add('active'); }
+  else if (l){ head.textContent = L('編集中：画像「' + (l.name || '画像レイヤー') + '」', 'Editing: image “' + (l.name || 'Image layer') + '”'); head.className = 'editHead'; box.classList.add('active'); }
+  else { head.textContent = L('上のレイヤー一覧かプレビューでレイヤーを選ぶと、ここで編集できます', 'Select a layer from the list above or on the preview to edit it here'); head.className = 'editHead idle'; box.classList.remove('active'); }
   $('imgLayerEdit').style.display = l ? 'block' : 'none';
   if (l){
     $('ilW').value = Math.round(l.w); $('ilWVal').textContent = Math.round(l.w) + 'px';
@@ -1096,7 +1266,7 @@ $('teText').oninput = e => { const t = selectedTextObj(); if (t){ t.text = e.tar
 function refreshTextListSoft(){
   // update labels without rebuilding edit focus
   const btns = $('textList').children;
-  state.texts[state.side].forEach((t, i) => { if (btns[i]) btns[i].textContent = t.text || '(空)'; });
+  state.texts[state.side].forEach((t, i) => { if (btns[i]) btns[i].textContent = t.text || L('(空)', '(empty)'); });
 }
 $('teSize').oninput = e => { const t = selectedTextObj(); if (t){ t.size = +e.target.value; $('teSizeVal').textContent = e.target.value + 'px'; renderMain(); } };
 $('teRot').oninput = e => { const t = selectedTextObj(); if (t){ t.rot = +e.target.value; $('teRotVal').textContent = e.target.value + '°'; renderMain(); } };
@@ -1149,7 +1319,7 @@ function syncSpinePosUI(){
   const s = state.spine;
   $('spineTitlePos').value = s.titlePos || 0; $('spineTitlePosVal').textContent = (s.titlePos || 0) + 'px';
   $('spineArtistPos').value = s.artistPos || 0; $('spineArtistPosVal').textContent = (s.artistPos || 0) + 'px';
-  $('spineCatPos').value = s.catPos || 0; $('spineCatPosVal').textContent = '下端から' + (s.catPos || 0) + 'px';
+  $('spineCatPos').value = s.catPos || 0; $('spineCatPosVal').textContent = catPosText(s.catPos || 0);
 }
 function applySpineDrag(part, orig, dyScreen){
   const s = state.spine;
@@ -1166,7 +1336,7 @@ function applySpineDrag(part, orig, dyScreen){
 document.querySelectorAll('input[type="range"]').forEach(r => {
   const span = document.getElementById(r.id + 'Val') || document.getElementById(r.id.replace(/Range$/, '') + 'Val');
   if (!span) return;
-  span.title = 'クリックで数値を直接入力';
+  span.title = L('クリックで数値を直接入力', 'Click to type a value');
   span.addEventListener('click', () => {
     if (span.querySelector('input')) return;
     const cur = span.textContent;
@@ -1341,32 +1511,32 @@ document.addEventListener('keydown', e => {
 /* ---------- export dialog ---------- */
 const EXP_CONTENTS = {
   pdf: [
-    ['card-both', 'カード実寸（89.2×103.1mm）・両面（2ページ）'],
-    ['a4-front', 'A4・おもて面'],
-    ['a4-back', 'A4・うら面'],
-    ['a4-both', 'A4・両面（2ページ）'],
+    ['card-both', 'カード実寸（{MM}mm）・両面（2ページ）', 'Card size ({MM}mm) — both sides (2 pages)'],
+    ['a4-front', 'A4・おもて面', 'A4 — Front'],
+    ['a4-back', 'A4・うら面', 'A4 — Back'],
+    ['a4-both', 'A4・両面（2ページ）', 'A4 — both sides (2 pages)'],
   ],
   png: [
-    ['front', 'おもて面（1053×1218px）'],
-    ['back', 'うら面（1053×1218px）'],
-    ['both', '両面（2ファイル）'],
-    ['a4-front', 'A4・おもて面（2480×3508px）'],
-    ['a4-back', 'A4・うら面（2480×3508px）'],
-    ['a4-both', 'A4・両面（2ファイル）'],
+    ['front', 'おもて面（{W}×{H}px）', 'Front ({W}×{H}px)'],
+    ['back', 'うら面（{W}×{H}px）', 'Back ({W}×{H}px)'],
+    ['both', '両面（2ファイル）', 'Both sides (2 files)'],
+    ['a4-front', 'A4・おもて面（2480×3508px）', 'A4 — Front (2480×3508px)'],
+    ['a4-back', 'A4・うら面（2480×3508px）', 'A4 — Back (2480×3508px)'],
+    ['a4-both', 'A4・両面（2ファイル）', 'A4 — both sides (2 files)'],
   ],
   jpg: [
-    ['front', 'おもて面（1053×1218px）'],
-    ['back', 'うら面（1053×1218px）'],
-    ['both', '両面（2ファイル）'],
-    ['a4-front', 'A4・おもて面（2480×3508px）'],
-    ['a4-back', 'A4・うら面（2480×3508px）'],
-    ['a4-both', 'A4・両面（2ファイル）'],
+    ['front', 'おもて面（{W}×{H}px）', 'Front ({W}×{H}px)'],
+    ['back', 'うら面（{W}×{H}px）', 'Back ({W}×{H}px)'],
+    ['both', '両面（2ファイル）', 'Both sides (2 files)'],
+    ['a4-front', 'A4・おもて面（2480×3508px）', 'A4 — Front (2480×3508px)'],
+    ['a4-back', 'A4・うら面（2480×3508px）', 'A4 — Back (2480×3508px)'],
+    ['a4-both', 'A4・両面（2ファイル）', 'A4 — both sides (2 files)'],
   ],
   print: [
-    ['current', '表示中の面'],
-    ['front', 'おもて面'],
-    ['back', 'うら面'],
-    ['both', '両面（2ページ）'],
+    ['current', '表示中の面', 'Current side'],
+    ['front', 'おもて面', 'Front'],
+    ['back', 'うら面', 'Back'],
+    ['both', '両面（2ページ）', 'Both sides (2 pages)'],
   ],
 };
 function updateExpPreview(){
@@ -1382,27 +1552,31 @@ function updateExpPreview(){
     fig.appendChild(im); fig.appendChild(cap);
     wrap.appendChild(fig);
   }
-  $('expPreviewNote').textContent = pages.length ? `全${pages.length}ページ` : '';
+  $('expPreviewNote').textContent = pages.length ? L(`全${pages.length}ページ`, `${pages.length} page(s)`) : '';
   $('expPreview').style.display = 'block';
 }
 function refreshExpDialog(){
   const fmt = $('expFormat').value;
   const sel = $('expContent'); const cur = sel.value;
   sel.innerHTML = '';
-  for (const [v, t] of EXP_CONTENTS[fmt]){
-    const o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o);
+  for (const [v, ja, en] of EXP_CONTENTS[fmt]){
+    const o = document.createElement('option'); o.value = v;
+    o.textContent = (LANG === 'en' ? en : ja).replaceAll('{W}', W).replaceAll('{H}', H).replaceAll('{MM}', MM_W.toFixed(1) + '×' + MM_H.toFixed(1));
+    sel.appendChild(o);
   }
   if ([...sel.options].some(o => o.value === cur)) sel.value = cur;
   const isPrint = fmt === 'print';
   const usesA4 = isPrint ? $('printPaper').value === 'a4' : sel.value.startsWith('a4');
   $('expPrintRow').style.display = isPrint ? 'block' : 'none';
   $('expA4Row').style.display = usesA4 ? 'block' : 'none';
-  $('btnExpGo').textContent = isPrint ? '印刷する' : '書き出す';
+  $('btnExpGo').textContent = isPrint ? L('印刷する', 'Print') : L('書き出す', 'Export');
   const pages = buildExportPages();
-  const sizeNote = pages.length ? `選択中：${sel.options[sel.selectedIndex].textContent} ／ 全${pages.length}ページ ／ 1ページ ${pages[0].wMm.toFixed(1)}×${pages[0].hMm.toFixed(1)}mm` : '';
-  $('expDesc').textContent = `PDFと同じ配置のまま、画像（PNG／JPG）でも書き出せます。各ページは実寸・300 DPI相当で描かれます。カード実寸は ${MM_W.toFixed(1)}×${MM_H.toFixed(1)}mm（${W}×${H}px）、A4は 210×297mm（2480×3508px）です。A4では同じデザインを2個並べることもできます（「A4の配置」で選択）。点線の切り取りガイドは色反転で描かれるため、黒いデザインでは白く、白いデザインでは黒く見えます。ブラウザで印刷する場合はこちらがおすすめです。印刷結果が実寸より大きい／小さい場合は「サイズ補正（mm）」で調整してください（ブラウザ印刷では0.5mmほど大きく出ることがあります。まずは -0.5 にしてあります）。
+  const sizeNote = pages.length ? L(`選択中：${sel.options[sel.selectedIndex].textContent} ／ 全${pages.length}ページ ／ 1ページ ${pages[0].wMm.toFixed(1)}×${pages[0].hMm.toFixed(1)}mm`, `Selected: ${sel.options[sel.selectedIndex].textContent} / ${pages.length} page(s) / page size ${pages[0].wMm.toFixed(1)}×${pages[0].hMm.toFixed(1)}mm`) : '';
+  $('expDesc').textContent = L(`PDFと同じ配置のまま、画像（PNG／JPG）でも書き出せます。各ページは実寸・300 DPI相当で描かれます。カード実寸は ${MM_W.toFixed(1)}×${MM_H.toFixed(1)}mm（${W}×${H}px）、A4は 210×297mm（2480×3508px）です。A4では同じデザインを2個並べることもできます（「A4の配置」で選択）。点線の切り取りガイドは色反転で描かれるため、黒いデザインでは白く、白いデザインでは黒く見えます。ブラウザで印刷する場合はこちらがおすすめです。印刷結果が実寸より大きい／小さい場合は「サイズ補正（mm）」で調整してください（ブラウザ印刷では0.5mmほど大きく出ることがあります。まずは -0.5 にしてあります）。
 選択を変えると、書き出しレイアウトが下のプレビューに表示されます。
-${sizeNote}`;
+${sizeNote}`, `The same layout as the PDF can also be exported as images (PNG / JPG). Each page is drawn at actual size, equivalent to 300 DPI. Card size is ${MM_W.toFixed(1)}×${MM_H.toFixed(1)}mm (${W}×${H}px); A4 is 210×297mm (2480×3508px). On A4 you can place two copies of the same design (choose in “A4 layout”). The dashed cut guides are drawn inverted, so they appear white on dark designs and black on light ones. For browser printing, the Print format here is recommended. If the printout comes out larger or smaller than actual size, adjust “Size adjustment (mm)” (browser printing tends to come out about 0.5mm larger, so it starts at −0.5).
+Changing the selection shows the export layout in the preview below.
+${sizeNote}`);
   updateExpPreview();
 }
 $('btnExportOpen').onclick = () => { refreshExpDialog(); $('expDlg').showModal(); };
@@ -1427,7 +1601,7 @@ $('btnExpGo').onclick = async () => {
   } else {
     for (let i = 0; i < pages.length; i++){
       const pg = pages[i];
-      const sideEn = pg.label.includes('おもて') ? 'front' : 'back';
+      const sideEn = pg.side || (pg.label.includes('おもて') ? 'front' : 'back');
       const base = pg.wMm > 200 ? `jcard_A4_${sideEn}_2480x3508_300dpi` : `jcard_${sideEn}_${W}x${H}_300dpi`;
       if (fmt === 'png') download(await canvasPng300(pg.canvas), base + '.png');
       else download(await canvasJpg300(pg.canvas), base + '.jpg');
@@ -1438,8 +1612,8 @@ $('btnExpGo').onclick = async () => {
 
 /* both preview */
 $('btnBoth').onclick = () => {
-  $('capFront').textContent = `おもて面：${PANELS.front.map(pn => pn.name.replace(/ \S+$/, '')) .join(' ｜ ')}（${PANELS.front.map(pn => pn.w).join(' ｜ ')}）`;
-  $('capBack').textContent = `うら面：${PANELS.back.map(pn => pn.name.replace(/ \S+$/, '')).join(' ｜ ')}（${PANELS.back.map(pn => pn.w).join(' ｜ ')}）`;
+  $('capFront').textContent = L(`おもて面：${PANELS.front.map(pn => pn.name.replace(/ \S+$/, '')).join(' ｜ ')}（${PANELS.front.map(pn => pn.w).join(' ｜ ')}）`, `Front: ${PANELS.front.map(pn => pname(pn)).join(' | ')} (${PANELS.front.map(pn => pn.w).join(' | ')})`);
+  $('capBack').textContent = L(`うら面：${PANELS.back.map(pn => pn.name.replace(/ \S+$/, '')).join(' ｜ ')}（${PANELS.back.map(pn => pn.w).join(' ｜ ')}）`, `Back: ${PANELS.back.map(pn => pname(pn)).join(' | ')} (${PANELS.back.map(pn => pn.w).join(' | ')})`);
   $('bothFront').src = renderToCanvas('front').toDataURL('image/png');
   $('bothBack').src = renderToCanvas('back').toDataURL('image/png');
   $('bothDlg').showModal();
@@ -1580,7 +1754,7 @@ async function importProjectData(data){
     if (state.spine.dir === 'vert') state.spine.dir = 'ccw';
     $('spineColor').value = state.spine.color; $('spineDir').value = state.spine.dir;
     refreshFontSelects();
-    if (state.customFonts.length) $('fontStatus').textContent = `読み込んだフォント：${state.customFonts.map(f => f.name).join('、')}（フォント欄で選べます）`;
+    if (state.customFonts.length) $('fontStatus').textContent = L(`読み込んだフォント：${state.customFonts.map(f => f.name).join('、')}（フォント欄で選べます）`, `Loaded fonts: ${state.customFonts.map(f => f.name).join(', ')} (selectable in the font menus)`);
     $('tlOn').checked = state.tracklist.on; $('tlText').value = state.tracklist.text;
     $('tlPanel').value = state.tracklist.panel || 'back_main';
     $('tlSize').value = state.tracklist.size; $('tlSizeVal').textContent = state.tracklist.size + 'px';
@@ -1590,7 +1764,7 @@ async function importProjectData(data){
     $('spineTitlePos').value = state.spine.titlePos || 0; $('spineTitlePosVal').textContent = (state.spine.titlePos || 0) + 'px';
     $('spineArtistPos').value = state.spine.artistPos || 0; $('spineArtistPosVal').textContent = (state.spine.artistPos || 0) + 'px';
     $('spineCatalog').value = state.spine.catalog || '';
-    $('spineCatPos').value = state.spine.catPos != null ? state.spine.catPos : 60; $('spineCatPosVal').textContent = '下端から' + $('spineCatPos').value + 'px';
+    $('spineCatPos').value = state.spine.catPos != null ? state.spine.catPos : 60; $('spineCatPosVal').textContent = catPosText($('spineCatPos').value);
     $('spineCatSize').value = state.spine.catalogSize || 36; $('spineCatSizeVal').textContent = (state.spine.catalogSize || 36) + 'px';
     $('fillOn').checked = !!state.spineFill.on; $('fillColor').value = state.spineFill.color;
     $('fillOp').value = Math.round(state.spineFill.op * 100); $('fillOpVal').textContent = Math.round(state.spineFill.op * 100) + '%';
@@ -1598,29 +1772,32 @@ async function importProjectData(data){
     $('tlRot').value = state.tracklist.rot || 0; $('tlRotVal').textContent = (state.tracklist.rot || 0) + '°';
     textSeq = 1000;
     setSide(data.side === 'back' ? 'back' : 'front');
-  } catch(err){ alert('プロジェクトファイルを読み込めませんでした'); }
+  } catch(err){ alert(L('プロジェクトファイルを読み込めませんでした', 'Could not load the project file')); }
 }
 $('loadFile').onchange = async e => {
   const f = e.target.files[0]; if (!f) return;
   try { await importProjectData(JSON.parse(await f.text())); }
-  catch(err){ alert('プロジェクトファイルを読み込めませんでした'); }
+  catch(err){ alert(L('プロジェクトファイルを読み込めませんでした', 'Could not load the project file')); }
   e.target.value = '';
 };
 async function loadTemplate(name, file){
-  if (!confirm(`テンプレート「${name}」を読み込みます。今のデザインは置き換わります。よろしいですか？`)) return;
+  if (!confirm(L(`テンプレート「${name}」を読み込みます。今のデザインは置き換わります。よろしいですか？`, `Load the template “${name}”? Your current design will be replaced.`))) return;
   try {
     const res = await fetch('https://raw.githubusercontent.com/EiraRuinveil/Cassette-J-Card-Studio/main/' + file);
     if (!res.ok) throw new Error('fetch failed');
     await importProjectData(await res.json());
-  } catch(err){ alert('テンプレートを読み込めませんでした（通信環境をご確認ください）'); }
+  } catch(err){ alert(L('テンプレートを読み込めませんでした（通信環境をご確認ください）', 'Could not load the template (please check your connection)')); }
 }
-$('btnTplShort').onclick = () => loadTemplate('ショートフラップ型', 'jcard_shortflap_front_.json');
-$('btnTplLong').onclick = () => loadTemplate('ロングフラップ型', 'jcard_longflap_front_.json');
+$('btnTplShort').onclick = () => loadTemplate(L('ショートフラップ型', 'Short flap'), 'jcard_shortflap_front_.json');
+$('btnTplLong').onclick = () => loadTemplate(L('ロングフラップ型', 'Long flap'), 'jcard_longflap_front_.json');
 
 refreshFontSelects();
 try { const savedTpl = localStorage.getItem('jcard-template'); if (savedTpl && TEMPLATES[savedTpl]) applyTemplate(savedTpl, false); } catch(e) {}
 setSide('front');
 requestAnimationFrame(fitZoom);
+$('langJa').onclick = () => applyLang('ja');
+$('langEn').onclick = () => applyLang('en');
+if (LANG === 'en') applyLang('en');
 </script>
 </body>
 </html>
