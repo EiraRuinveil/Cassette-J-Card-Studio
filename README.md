@@ -1,5 +1,7 @@
 # Cassette J Card Studio
 
+[日本語](README.md) | [English](README.en.md)
+
 カセットテープのJカード（ケースの紙ジャケット）を作成する、HTML単体のアプリです。画像処理はすべてブラウザー内で行われ、インストールは不要です。
 
 ## 起動方法
