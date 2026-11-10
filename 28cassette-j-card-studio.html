@@ -1,0 +1,1585 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cassette J Card Studio — カセットテープ Jカード作成</title>
+<style>
+  :root{
+    --bg:#17181c; --panel:#22242a; --panel2:#2a2d35; --line:#3a3e48;
+    --text:#f2f2f4; --sub:#a7abb6; --accent:#e8b34b; --accent2:#7479ff;
+    --radius:12px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic UI","Yu Gothic",Meiryo,sans-serif;background:var(--bg);color:var(--text)}
+  header{padding:12px 20px 6px;display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 16px}
+  header h1{font-size:21px;margin:0;letter-spacing:.02em}
+  header h1 .en{color:var(--accent)}
+  header p{margin:0;color:var(--sub);font-size:13px}
+  #buildStamp{margin-left:auto;color:var(--sub);font-size:12px}
+  main{display:flex;gap:16px;padding:6px 20px 14px;align-items:stretch;height:calc(100vh - 60px);height:calc(100dvh - 60px)}
+  .previewCol{flex:none;width:min(712px,100%);min-width:300px;display:flex;flex-direction:column}
+  .printGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px;margin:6px 0}
+  .printGrid label{font-size:12px;color:var(--sub);display:block;margin-bottom:4px}
+  .printGrid select,.printGrid input[type=number]{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:7px 8px;font-size:13px}
+  @media (min-width:1151px){
+    #exportCard{grid-column:span 2}
+    #exportCard .btnGrid{grid-template-columns:repeat(4,1fr)}
+  }
+  @media (min-width:1151px){ body{overflow:hidden} }
+  .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+  .tabs{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:999px;overflow:hidden}
+  .tabs button{border:0;background:transparent;color:var(--sub);padding:9px 18px;font-size:14px;cursor:pointer}
+  .tabs button.active{background:var(--accent);color:#191a1e;font-weight:700}
+  .toolBtn{background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:999px;padding:8px 14px;font-size:13px;cursor:pointer}
+  .toolBtn:hover{border-color:var(--accent)}
+  .toolbar label{font-size:13px;color:var(--sub);display:flex;align-items:center;gap:6px}
+  .canvasWrap{background:#0d0e11;border:1px solid var(--line);border-radius:var(--radius);padding:14px;overflow:auto;text-align:center;flex:1;min-height:0}
+  canvas{background:#fff;box-shadow:0 6px 30px rgba(0,0,0,.5);cursor:grab;touch-action:none}
+  canvas:active{cursor:grabbing}
+  .sizeNote{color:var(--sub);font-size:12px;line-height:1.6;margin-top:8px;white-space:pre-line}
+  aside{flex:1 1 0;min-width:0;max-width:100%;display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px;overflow-y:auto;align-content:start;padding-right:2px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:11px 13px}
+  @media (max-width:1150px){
+    main{height:auto;flex-wrap:wrap}
+    .previewCol{flex:1 1 100%;width:auto}
+    .canvasWrap{flex:none}
+    aside{flex:1 1 100%;overflow:visible;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+  }
+  .card h2{font-size:14px;margin:0 0 10px;color:var(--accent);letter-spacing:.04em}
+  .card h2 .n{color:var(--sub);font-weight:400;margin-right:6px}
+  .row{display:flex;gap:8px;align-items:center;margin:6px 0;flex-wrap:wrap}
+  .row label{font-size:12.5px;color:var(--sub);min-width:86px}
+  .row input[type=text],.row input[type=number],.row select,.row textarea{
+    background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:7px 9px;font-size:13.5px;flex:1;min-width:0}
+  .row textarea{width:100%;flex:none;min-height:64px;resize:vertical;line-height:1.5}
+  .row input[type=color]{width:44px;height:32px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);padding:2px;cursor:pointer}
+  .row input[type=range]{flex:1;accent-color:var(--accent)}
+  .panelBtns{display:flex;flex-direction:column;gap:6px}
+  .panelBtns button{text-align:left;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px;cursor:pointer;display:flex;justify-content:space-between;gap:8px}
+  .panelBtns button.active{border-color:var(--accent);background:#34303f}
+  .panelBtns button span.dim{color:var(--sub);font-size:11.5px}
+  .btn{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 12px;font-size:13px;cursor:pointer}
+  .btn:hover{border-color:var(--accent)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#191a1e;font-weight:700}
+  .btn.danger:hover{border-color:#e05a5a;color:#ff9a9a}
+  .btnGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .hint{font-size:12px;color:var(--sub);line-height:1.65;white-space:pre-line}
+  .textList{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+  .textList button{text-align:left;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:7px 10px;font-size:13px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .textList button.active{border-color:var(--accent2);background:rgba(116,121,255,.18);font-weight:700}
+  .subhead{font-size:12.5px;font-weight:700;color:var(--sub);margin:12px 0 2px}
+  .editBox{margin-top:10px;border:1.5px solid var(--line);border-radius:10px;padding:10px}
+  .editBox.active{border-color:var(--accent2);background:rgba(116,121,255,.06)}
+  .editHead{font-weight:700;font-size:13.5px;margin-bottom:8px}
+  .editHead.idle{color:var(--sub);font-weight:400;font-size:12.5px}
+  dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:14px;max-width:94vw;padding:18px}
+  dialog::backdrop{background:rgba(0,0,0,.65)}
+  dialog h3{margin:0 0 12px;font-size:16px}
+  .bothImgs{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+  .bothImgs figure{margin:0;text-align:center}
+  .bothImgs img{height:min(62vh,640px);background:#fff;border:1px solid var(--line)}
+  .bothImgs figcaption{color:var(--sub);font-size:12.5px;margin-top:6px}
+  #expPreviewImgs img{height:230px}
+  #expDlg select,#expDlg input[type=number]{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 10px;font-size:14px;flex:1;min-width:0}
+  #printArea{display:none}
+  @media print{
+    body>*{display:none !important}
+    body>#printArea{display:block !important}
+    html,body{margin:0 !important;padding:0 !important;background:#fff}
+    #printArea .p-page{overflow:hidden;page-break-after:always;break-after:page}
+    #printArea .p-page:last-child{page-break-after:auto;break-after:auto}
+    #printArea img{display:block}
+    #printArea .cutWrap{position:relative;flex:none}
+    #printArea .cutGuide{position:absolute;inset:0;border:0.3mm dashed #fff;mix-blend-mode:difference;pointer-events:none}
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+span[id$="Val"]{ cursor:pointer; border-bottom:1px dotted #8a8f98; }
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="en">Cassette J Card Studio</span> カセットテープ Jカード作成</h1>
+  <p id="sizeInfo">全体 1053 × 1218 px（300 DPI ＝ 89.15 × 103.12 mm）／ メイン 723px ・ 背 153px ・ 裏表紙 177px</p>
+  <span id="buildStamp">Build 2026-11-10 · v37</span>
+</header>
+<main>
+  <section class="previewCol">
+    <div class="toolbar">
+      <label>型 <select id="tplSel"><option value="jissun">ショートフラップ型（フラップ15mm）</option><option value="standard">ロングフラップ型（フラップ25.4mm）</option></select></label>
+      <div class="tabs" role="tablist">
+        <button id="tabFront" class="active" type="button">おもて面</button>
+        <button id="tabBack" type="button">うら面</button>
+      </div>
+      <button class="toolBtn" id="btnBoth" type="button">両面プレビュー</button>
+      <button class="toolBtn" id="btnFit" type="button">画面に合わせる</button>
+      <label>ズーム <input type="range" id="zoomRange" min="25" max="110" value="52"> <span id="zoomVal">52%</span></label>
+      <label><input type="checkbox" id="guideChk" checked> 折り線・ガイド表示</label>
+    </div>
+    <div class="canvasWrap">
+      <canvas id="stage" width="1053" height="1218"></canvas>
+    </div>
+    <p class="sizeNote" id="layoutNote"></p>
+  </section>
+
+  <aside>
+    <div class="card">
+      <h2><span class="n">1</span>パネルを選んで画像・文字を入れる</h2>
+      <div class="panelBtns" id="panelBtns"></div>
+      <p class="hint" id="panelTarget" style="color:var(--accent);font-size:13px;margin:8px 0 2px"></p>
+      <div class="row"><label>背景色</label><input type="color" id="panelBg" value="#ffffff"><button class="btn" id="btnBgAll" type="button">この面の全パネルに</button></div>
+      <div class="row"><label>画像</label><input type="file" id="imgFile" accept="image/*" style="flex:1;min-width:0;font-size:12.5px"></div>
+      <div class="row"><label>はめ方</label>
+        <select id="fitSel">
+          <option value="cover">パネルを埋める（切り抜き）</option>
+          <option value="contain">全体を表示（余白あり）</option>
+          <option value="stretch">パネルに引き伸ばし</option>
+        </select>
+      </div>
+      <div class="row"><label>拡大率</label><input type="range" id="imgScale" min="10" max="400" value="100"><span id="imgScaleVal">100%</span></div>
+      <div class="row"><label>回転</label><input type="range" id="imgRot" min="-180" max="180" value="0"><span id="imgRotVal">0°</span></div>
+      <p class="hint">画像はプレビュー上でドラッグして位置を動かせます。
+Shiftキーを押しながらドラッグすると、縦または横にまっすぐだけ動かせます。選択中は矢印キーでも動かせます（Shift＋矢印で10px）。</p>
+      <div class="row">
+        <button class="btn" id="btnImgReset" type="button">位置・拡大をリセット</button>
+        <button class="btn danger" id="btnImgDel" type="button">画像を削除</button>
+      </div>
+      <div class="subhead">この部位に文字を追加</div>
+      <div class="row"><textarea id="panelText" rows="2" placeholder="この部位に入れる文字（改行できます）"></textarea><button class="btn primary" id="btnAddPanelText" type="button">追加</button></div>
+      <p class="hint">選んでいる部位の中央に文字が入ります（改行できます。「追加」ボタンか Ctrl+Enter で追加）。大きさ・色・フォント・回転などは、カード3の「レイヤー」欄で調整できます。プレビューをダブルクリックしても、ここに文字を入れられます。</p>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">2</span>背のタイトル（おもて面）</h2>
+      <div class="row"><label>タイトル</label><input type="text" id="spineTitle" placeholder="アルバム名など"></div>
+      <div class="row"><label>アーティスト</label><input type="text" id="spineArtist" placeholder="アーティスト名"></div>
+      <div class="row"><label>タイトルの文字サイズ</label><input type="range" id="spineSize" min="24" max="110" value="58"><span id="spineSizeVal">58px</span></div>
+      <div class="row"><label>アーティストの文字サイズ</label><input type="range" id="spineArtistSize" min="16" max="110" value="58"><span id="spineArtistSizeVal">58px</span></div>
+      <div class="row"><label>文字色</label><input type="color" id="spineColor" value="#111111">
+        <label style="min-width:0">向き</label>
+        <select id="spineDir" style="flex:1">
+          <option value="ccw">下から上へ読む（回転）</option>
+          <option value="cw">上から下へ読む（回転）</option>
+        </select>
+      </div>
+      <div class="row"><label>タイトルのフォント</label><select id="fontTitle"></select></div>
+      <div class="row"><label>アーティストのフォント</label><select id="fontArtist"></select></div>
+      <div class="row"><label>カタログのフォント</label><select id="fontCatalog"></select></div>
+      <div class="row"><label>字間</label><input type="range" id="spineSpacing" min="-5" max="60" value="0"><span id="spineSpacingVal">0px</span></div>
+      <div class="row"><label>タイトルの位置</label><input type="range" id="spineTitlePos" min="-560" max="560" value="0"><span id="spineTitlePosVal">0px</span></div>
+      <div class="row"><label>アーティストの位置</label><input type="range" id="spineArtistPos" min="-560" max="560" value="0"><span id="spineArtistPosVal">0px</span></div>
+      <div class="row"><label>カタログ番号</label><input type="text" id="spineCatalog" placeholder="例：ABC-000（任意）"></div>
+      <div class="row"><label>カタログの位置</label><input type="range" id="spineCatPos" min="0" max="500" value="60"><span id="spineCatPosVal">下端から60px</span></div>
+      <div class="row"><label>カタログの文字サイズ</label><input type="range" id="spineCatSize" min="16" max="110" value="36"><span id="spineCatSizeVal">36px</span></div>
+      <div class="row"><label style="min-width:0"><input type="checkbox" id="fillOn"> 背部分を塗りつぶす（おもて／うら両方の背）</label></div>
+      <div class="row"><label>塗りの色</label><input type="color" id="fillColor" value="#000000">
+        <label style="min-width:0">透明度</label><input type="range" id="fillOp" min="5" max="100" value="55"><span id="fillOpVal">55%</span></div>
+      <p class="hint">背の背景色は、パネル選択で「背」を選んで背景色を変えてください。
+文字サイズは指定どおりの大きさで描かれます（自動縮小なし）。長すぎる場合は両端がはみ出すので、文字サイズ・字間・位置で調整してください。
+背の文字はプレビュー上で直接ドラッグしても動かせます（上下＝背の方向だけ。横は常に中央です）。選択中は↑↓キーでも動かせます。位置は「下方向がプラス」で、向き（回転）を変えても位置はそのまま保たれます。回転モードでは、アーティストとタイトルを1行に並べて背の中央に表示します（並びはアーティスト→タイトル、位置はそれぞれの位置スライダー・ドラッグで別々に動かせます）。
+塗りつぶしは、背の画像・背景の上に指定色を重ねます（文字はその上に描かれます）。</p>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">3</span>レイヤー（文字・画像・フォント）</h2>
+      <div class="row"><label>フォント読込</label><input type="file" id="fontFile" accept=".ttf,.otf,.woff,.woff2" style="flex:1;min-width:0;font-size:12.5px"></div>
+      <p class="hint" id="fontStatus">フォントファイル（TTF / OTF / WOFF / WOFF2）を読み込むと、背・文字レイヤー・曲目リストで選べます。プロジェクトにも保存されます。
+Windowsのフォントは C:\Windows\Fonts の中にあります。<button class="btn" id="btnCopyFontPath" type="button" style="padding:2px 8px;font-size:11.5px">パスをコピー</button></p>
+      <div class="subhead">画像レイヤーを追加</div>
+      <div class="row"><label>画像レイヤー</label><input type="file" id="layerImgFile" accept="image/*" style="flex:1;min-width:0;font-size:12.5px"></div>
+      <p class="hint">画像レイヤーはロゴやイラストなどを自由な位置・大きさで重ねられます（パネル全体の画像とは別です）。</p>
+      <div class="subhead">文字を追加（選択中の部位の中央に入ります）</div>
+      <div class="row"><input type="text" id="newText" placeholder="追加する文字"><button class="btn primary" id="btnAddText" type="button">追加</button></div>
+      <div class="subhead">レイヤー一覧（クリックで選択）</div>
+      <div class="textList" id="textList"></div>
+      <div class="editBox" id="layerEditBox">
+      <div class="editHead idle" id="layerEditHead">上のレイヤー一覧かプレビューでレイヤーを選ぶと、ここで編集できます</div>
+      <div id="imgLayerEdit" style="display:none">
+        <div class="row"><label>画像の幅</label><input type="range" id="ilW" min="30" max="1218" value="420"><span id="ilWVal">420px</span></div>
+        <div class="row"><label>回転</label><input type="range" id="ilRot" min="-180" max="180" value="0"><span id="ilRotVal">0°</span></div>
+        <div class="row"><label>透明度</label><input type="range" id="ilOp" min="5" max="100" value="100"><span id="ilOpVal">100%</span></div>
+        <div class="row">
+          <button class="btn" id="btnIlFront" type="button">前面へ</button>
+          <button class="btn" id="btnIlBack" type="button">背面へ</button>
+          <button class="btn danger" id="btnDelImgLayer" type="button">この画像を削除</button>
+        </div>
+      </div>
+      <div id="textEdit" style="display:none">
+        <div class="row"><label>内容</label><textarea id="teText" rows="2"></textarea></div>
+        <div class="row"><label>サイズ</label><input type="range" id="teSize" min="12" max="300" value="64"><span id="teSizeVal">64px</span></div>
+        <div class="row"><label>回転</label><input type="range" id="teRot" min="-180" max="180" value="0"><span id="teRotVal">0°</span></div>
+        <div class="row"><label>書き方向</label>
+          <select id="teVert">
+            <option value="h">横書き</option>
+            <option value="v">縦書き（文字を縦に積む）</option>
+          </select>
+        </div>
+        <div class="row"><label>字間</label><input type="range" id="teSpacing" min="-5" max="80" value="0"><span id="teSpacingVal">0px</span></div>
+        <div class="row"><label>色</label><input type="color" id="teColor" value="#111111">
+          <label style="min-width:0">太さ</label>
+          <select id="teWeight"><option value="400">通常</option><option value="700">太字</option></select>
+        </div>
+        <div class="row"><label>フォント</label>
+          <select id="teFont"></select>
+        </div>
+        <div class="row"><button class="btn danger" id="btnDelText" type="button">この文字を削除</button></div>
+      </div>
+      </div>
+      <p class="hint">文字も画像レイヤーも、プレビュー上でドラッグして動かせます。クリックで選択できます。
+Shiftキーを押しながらドラッグすると縦・横にまっすぐだけ移動でき、選択中は矢印キーでも動かせます（Shift＋矢印で10px）。</p>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">4</span>曲目リスト</h2>
+      <div class="row"><label style="min-width:0"><input type="checkbox" id="tlOn"> 表示する</label></div>
+      <div class="row"><label>表示する場所</label><select id="tlPanel"><option value="back_main">うら面メイン</option><option value="back_flap">裏表紙フラップ・うら（15mm）</option><option value="front_flap">裏表紙フラップ・おもて（表面・15mm）</option></select></div>
+      <p class="hint">文字を入力すると自動で表示ONになり、プレビューが選んだ場所の面に切り替わります。隠したいときはチェックを外してください。細いフラップに置くときは、文字サイズを小さめにすると収まります。回転を90°にすると、フラップの縦方向に沿って読めます。</p>
+      <div class="row"><textarea id="tlText" placeholder="A&#10;1. ...&#10;2. ...&#10;&#10;B&#10;1. ..."></textarea></div>
+      <div class="row"><label>文字サイズ</label><input type="range" id="tlSize" min="20" max="90" value="42"><span id="tlSizeVal">42px</span></div>
+      <div class="row"><label>文字色</label><input type="color" id="tlColor" value="#111111"></div>
+      <div class="row"><label>フォント</label><select id="tlFont"></select></div>
+      <div class="row"><label>字間</label><input type="range" id="tlSpacing" min="0" max="40" value="0"><span id="tlSpacingVal">0px</span></div>
+      <div class="row"><label>回転</label><input type="range" id="tlRot" min="-180" max="180" value="0"><span id="tlRotVal">0°</span></div>
+    </div>
+
+    <div class="card" id="exportCard">
+      <h2><span class="n">5</span>書き出し・印刷・保存</h2>
+      <div class="row"><button class="btn primary" id="btnExportOpen" type="button" style="flex:1;padding:12px;font-size:15px">書き出し</button></div>
+      <p class="hint">「書き出し」を押すとダイアログが開き、形式（PDF／PNG／JPG／印刷）と用紙サイズ・出力内容を選んで、プレビューで確認してから書き出せます。印刷のサイズ補正・A4配置・点線ガイドの設定もダイアログの中にあります。</p>
+      <div class="row">
+        <button class="btn" id="btnSave" type="button">プロジェクト保存</button>
+        <label class="btn" style="min-width:0;cursor:pointer">プロジェクト読込<input type="file" id="loadFile" accept=".json,application/json" hidden></label>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<dialog id="bothDlg">
+  <h3>両面プレビュー（折ると背を中心に左右が重なります）</h3>
+  <div class="bothImgs">
+    <figure><img id="bothFront" alt="おもて面"><figcaption id="capFront">おもて面：裏表紙 177 ｜ 背 153 ｜ 表紙 723</figcaption></figure>
+    <figure><img id="bothBack" alt="うら面"><figcaption id="capBack">うら面：裏面 723 ｜ 背・うら 153 ｜ 裏表紙 177</figcaption></figure>
+  </div>
+  <div class="row" style="justify-content:flex-end"><button class="btn" id="btnBothClose" type="button">閉じる</button></div>
+</dialog>
+
+<dialog id="expDlg" style="width:min(680px,94vw)">
+  <h3 style="margin:0 0 14px;font-size:19px">書き出し</h3>
+  <div class="row"><label style="min-width:130px">形式</label>
+    <select id="expFormat">
+      <option value="pdf">PDF</option>
+      <option value="png">PNG</option>
+      <option value="jpg">JPG</option>
+      <option value="print">印刷</option>
+    </select>
+  </div>
+  <div class="row"><label style="min-width:130px">用紙サイズ・出力内容</label>
+    <select id="expContent"></select>
+  </div>
+  <div id="expPrintRow" style="display:none">
+    <div class="row"><label style="min-width:130px">印刷の用紙</label>
+      <select id="printPaper">
+        <option value="a4">A4に実寸で配置</option>
+        <option value="actual">カード実寸（89.2×103.1mm）</option>
+      </select>
+    </div>
+    <div class="row"><label style="min-width:130px">サイズ補正（mm）</label>
+      <input type="number" id="printAdjust" step="0.1" min="-5" max="5" value="-0.5" style="flex:0 0 100px">
+      <span class="hint" style="flex:1">ブラウザ印刷が実寸より大きく出る分を引く補正（初期値 -0.5、自動保存。印刷のみ）</span>
+    </div>
+  </div>
+  <div id="expA4Row" style="display:none">
+    <div class="row"><label style="min-width:130px">A4の配置</label>
+      <select id="printDup">
+        <option value="1">1個</option>
+        <option value="2">2個（同じデザイン×2）</option>
+      </select>
+    </div>
+    <div class="row"><label style="min-width:130px">切り取りガイド（点線）</label>
+      <select id="printGuide">
+        <option value="on">出す（色反転）</option>
+        <option value="off">出さない</option>
+      </select>
+    </div>
+  </div>
+  <p class="hint" id="expDesc"></p>
+  <div id="expPreview" style="display:none;margin:10px 0">
+    <div class="bothImgs" id="expPreviewImgs" style="justify-content:flex-start"></div>
+    <p class="hint" id="expPreviewNote"></p>
+  </div>
+  <div class="row" style="justify-content:flex-start;gap:10px;margin-top:14px">
+    <button class="btn primary" id="btnExpGo" type="button" style="background:#3c4048;border-color:#3c4048;color:#fff;min-width:110px">書き出す</button>
+    <button class="btn" id="btnExpClose" type="button">閉じる</button>
+  </div>
+</dialog>
+
+<div id="printArea"></div>
+<style id="printPageStyle"></style>
+<script>
+'use strict';
+const TEMPLATES = {
+  jissun: { W:1053, H:1218, mmW:89.15, mmH:103.12,
+    front:[['front_flap','裏表紙フラップ',0,177],['front_spine','背 Spine',177,153],['front_main','表紙 Front',330,723]],
+    back:[['back_main','裏面 Back',0,723],['back_spine','背・うら',723,153],['back_flap','裏表紙フラップ・うら',876,177]] },
+  standard: { W:1219, H:1200, mmW:103.21, mmH:101.6,
+    front:[['front_flap','裏表紙フラップ',0,300],['front_spine','背 Spine',300,150],['front_main','表紙 Front',450,769]],
+    back:[['back_main','裏面 Back',0,769],['back_spine','背・うら',769,150],['back_flap','裏表紙フラップ・うら',919,300]] },
+};
+let curTpl = 'jissun';
+let W = 1053, H = 1218, MM_W = 89.15, MM_H = 103.12;
+function buildPanels(key){
+  const t = TEMPLATES[key];
+  const mk = arr => arr.map(([id, name, x, w]) => ({ id, name, x, w }));
+  return { front: mk(t.front), back: mk(t.back) };
+}
+let PANELS = buildPanels('jissun');
+let ALL_PANEL_IDS = [...PANELS.front, ...PANELS.back].map(p => p.id);
+function applyTemplate(key, scale){
+  const t = TEMPLATES[key]; if (!t) return;
+  const oldW = W, oldH = H;
+  curTpl = key; W = t.W; H = t.H; MM_W = t.mmW; MM_H = t.mmH;
+  PANELS = buildPanels(key);
+  ALL_PANEL_IDS = [...PANELS.front, ...PANELS.back].map(p => p.id);
+  stage.width = W; stage.height = H;
+  if (scale && (oldW !== W || oldH !== H)){
+    const sx = W / oldW, sy = H / oldH;
+    for (const sd of ['front','back']){
+      for (const tx of state.texts[sd]){ tx.x *= sx; tx.y *= sy; }
+      for (const l of state.imgLayers[sd]){ l.x *= sx; l.y *= sy; l.w *= sx; }
+    }
+  }
+  { const flapMm = (PANELS.front[0].w * 25.4 / 300).toFixed(1).replace(/\.0$/, '');
+    for (const opt of $('tlPanel').options){
+      if (opt.value === 'back_flap') opt.textContent = `裏表紙フラップ・うら（${flapMm}mm）`;
+      if (opt.value === 'front_flap') opt.textContent = `裏表紙フラップ・おもて（表面・${flapMm}mm）`;
+    } }
+  $('tplSel').value = key;
+  $('sizeInfo').textContent = `全体 ${W} × ${H} px（300 DPI ＝ ${MM_W} × ${MM_H} mm）／ メイン ${PANELS.front[2].w}px ・ 背 ${PANELS.front[1].w}px ・ 裏表紙 ${PANELS.front[0].w}px`;
+  try { localStorage.setItem('jcard-template', key); } catch(e) {}
+  setSide(state.side);
+  if (autoFit) fitZoom();
+}
+
+function defaultPanel(){ return { bg:'#ffffff', img:null, fit:'cover', scale:1, dx:0, dy:0, rot:0 }; }
+const FONT_GOTHIC = `'Hiragino Kaku Gothic ProN','Hiragino Sans','Yu Gothic',sans-serif`;
+const BASE_FONTS = [
+  { label:'ゴシック', value:FONT_GOTHIC },
+  { label:'明朝', value:`'Hiragino Mincho ProN','Yu Mincho',serif` },
+  { label:'丸ゴシック風', value:`'Hiragino Maru Gothic ProN','Yu Gothic',sans-serif` },
+  { label:'等幅（タイプライター風）', value:`'Courier New',monospace` },
+  { label:'極太（Arial Black系）', value:`Impact,'Arial Black',sans-serif` },
+];
+const state = {
+  side:'front',
+  panels:{},                       // id -> panel state
+  imgObjs:{},                      // id -> HTMLImageElement (not saved)
+  spine:{ title:'', artist:'', size:58, artistSize:58, color:'#111111', dir:'ccw', font:FONT_GOTHIC, spacing:0, titlePos:0, artistPos:0, titleX:0, artistX:0, catalogX:0, catalog:'', catPos:60, catalogSize:36 },
+  spineFill:{ on:false, color:'#000000', op:0.55 },
+  spineSel:null,
+  texts:{ front:[], back:[] },     // {id,text,x,y,size,color,font,weight}
+  imgLayers:{ front:[], back:[] }, // {id,src,name,x,y,w,rot,op}
+  imgLayerObjs:{},                 // layer id -> HTMLImageElement (not saved)
+  customFonts:[],                  // {name, data} data = dataURL (saved in project)
+  tracklist:{ on:false, text:'', size:42, color:'#111111', font:FONT_GOTHIC, spacing:0, panel:'back_main', rot:0 },
+  selectedPanel:'front_main',
+  selectedText:null,
+  selectedImgLayer:null,
+  guides:true,
+};
+ALL_PANEL_IDS.forEach(id => state.panels[id] = defaultPanel());
+
+const $ = id => document.getElementById(id);
+const stage = $('stage'), ctx = stage.getContext('2d');
+
+function panelDef(side, id){ return PANELS[side].find(p => p.id === id); }
+function panelAt(side, x){ return PANELS[side].find(p => x >= p.x && x < p.x + p.w) || PANELS[side][PANELS[side].length-1]; }
+function otherSide(s){ return s === 'front' ? 'back' : 'front'; }
+
+/* ---------- rendering ---------- */
+function drawPanelImage(c, def, p){
+  const img = state.imgObjs[def.id];
+  if (!img || !img.complete || !img.naturalWidth) return;
+  c.save();
+  c.beginPath(); c.rect(def.x, 0, def.w, H); c.clip();
+  const iw = img.naturalWidth, ih = img.naturalHeight;
+  let dw, dh;
+  if (p.fit === 'stretch'){ dw = def.w * p.scale; dh = H * p.scale; }
+  else {
+    const s = (p.fit === 'contain' ? Math.min(def.w/iw, H/ih) : Math.max(def.w/iw, H/ih)) * p.scale;
+    dw = iw * s; dh = ih * s;
+  }
+  c.translate(def.x + def.w/2 + p.dx, H/2 + p.dy);
+  c.rotate((p.rot || 0) * Math.PI / 180);
+  c.drawImage(img, -dw/2, -dh/2, dw, dh);
+  c.restore();
+}
+
+function spacedWidth(c, text, spacing){
+  const chs = [...text]; let w = 0;
+  for (const ch of chs) w += c.measureText(ch).width;
+  return w + (spacing || 0) * Math.max(0, chs.length - 1);
+}
+function drawSpacedLine(c, text, cx, cy, spacing){
+  const chs = [...text]; if (!chs.length) return;
+  const total = spacedWidth(c, text, spacing);
+  let x = cx - total / 2;
+  const prev = c.textAlign; c.textAlign = 'left';
+  for (const ch of chs){ c.fillText(ch, x, cy); x += c.measureText(ch).width + (spacing || 0); }
+  c.textAlign = prev;
+}
+function spineFonts(s){
+  return { t: s.fontTitle || s.font || FONT_GOTHIC, a: s.fontArtist || s.font || FONT_GOTHIC, c: s.fontCatalog || s.font || FONT_GOTHIC };
+}
+function drawSpine(c, side){
+  if (side !== 'front') return;
+  const def = panelDef('front','front_spine');
+  const s = state.spine;
+  if (!s.title && !s.artist && !s.catalog) return;
+  const fonts = spineFonts(s); const fontT = fonts.t, fontA = fonts.a, fontC = fonts.c;
+  const spacing = s.spacing || 0;
+  c.save();
+  c.beginPath(); c.rect(def.x, 0, def.w, H); c.clip();
+  c.translate(def.x + def.w/2, H/2);
+  c.rotate(s.dir === 'ccw' ? -Math.PI/2 : Math.PI/2);
+  c.fillStyle = s.color; c.textAlign = 'center'; c.textBaseline = 'middle';
+  const aSize = s.artistSize != null ? s.artistSize : 58;
+  // 回転モード：アーティスト→タイトルの順で1行に並べ、背の中央（横方向0）に置く。
+  // 並び（ホーム位置）は1行のまま、それぞれの位置スライダーで別々にずらせる
+  const segs = [];
+  if (s.artist) segs.push({ text:s.artist, size:aSize, pos:s.artistPos || 0, font:fontA });
+  if (s.title) segs.push({ text:s.title, size:s.size, pos:s.titlePos || 0, font:fontT });
+  if (segs.length){
+    const gap = segs.length > 1 ? Math.round(s.size * 0.9) : 0;
+    const widths = segs.map(sg => { c.font = `400 ${sg.size}px ${sg.font}`; return spacedWidth(c, sg.text, spacing); });
+    const total = widths.reduce((a, b) => a + b, 0) + gap * (segs.length - 1);
+    // 画面上の並び（アーティストが上、タイトルが下）は向きを変えても変えない。
+    // 位置は画面座標で持つので、回転してもレイアウトが入れ替わらない
+    let acc = -total / 2;
+    segs.forEach((sg, i) => {
+      const o = acc + widths[i] / 2;
+      const localCx = (s.dir === 'ccw' ? -1 : 1) * (o + sg.pos);
+      c.font = `400 ${sg.size}px ${sg.font}`;
+      drawSpacedLine(c, sg.text, localCx, 0, spacing);
+      acc += widths[i] + gap;
+    });
+  }
+  c.restore();
+  // catalog number: anchored to the bottom end of the spine (rotated modes)
+  if (s.catalog){
+    c.font = `400 ${s.catalogSize || 36}px ${fontC}`;
+    const cw = spacedWidth(c, s.catalog, spacing);
+    c.save();
+    c.beginPath(); c.rect(def.x, 0, def.w, H); c.clip();
+    c.translate(def.x + def.w/2, H - 70 - (s.catPos || 0) - cw/2);
+    c.rotate(s.dir === 'ccw' ? -Math.PI/2 : Math.PI/2);
+    c.fillStyle = s.color; c.textAlign = 'center'; c.textBaseline = 'middle';
+    drawSpacedLine(c, s.catalog, 0, 0, spacing);
+    c.restore();
+  }
+}
+
+function drawTracklist(c, side){
+  const tl = state.tracklist;
+  if (!tl.on || !tl.text.trim()) return;
+  const panel = tl.panel || 'back_main';
+  const tSide = panel === 'front_flap' ? 'front' : 'back';
+  if (side !== tSide) return;
+  const def = panelDef(tSide, panel);
+  const font = tl.font || FONT_GOTHIC;
+  c.save();
+  c.beginPath(); c.rect(def.x, 0, def.w, H); c.clip();
+  c.fillStyle = tl.color; c.font = `400 ${tl.size}px ${font}`;
+  try { c.letterSpacing = (tl.spacing || 0) + 'px'; } catch(e) {}
+  c.textAlign = 'left'; c.textBaseline = 'top';
+  const lh = tl.size * 1.55;
+  const rot = tl.rot || 0;
+  let x0, maxW, yLimit, y;
+  if (rot){
+    const insetR = def.w >= 300 ? 56 : 14;
+    c.translate(def.x + def.w / 2, H / 2); c.rotate(rot * Math.PI / 180);
+    maxW = H - 128; x0 = -maxW / 2; y = -def.w / 2 + insetR; yLimit = def.w / 2 - insetR;
+  } else {
+    const inset = def.w >= 300 ? 56 : 14;
+    x0 = def.x + inset; maxW = def.w - inset * 2; y = 64; yLimit = H - 40;
+  }
+  for (const rawLine of tl.text.split('\n')){
+    if (rawLine === ''){ y += lh; continue; }
+    // wrap long lines by measured width
+    let line = '';
+    for (const ch of rawLine){
+      if (c.measureText(line + ch).width > maxW && line){ c.fillText(line, x0, y); y += lh; line = ch; }
+      else line += ch;
+      if (y > yLimit) break;
+    }
+    if (line && y <= yLimit){ c.fillText(line, x0, y); y += lh; }
+    if (y > yLimit) break;
+  }
+  try { c.letterSpacing = '0px'; } catch(e) {}
+  c.restore();
+}
+
+function imgLayerSize(l){
+  const img = state.imgLayerObjs[l.id];
+  if (!img || !img.naturalWidth) return { w:l.w, h:l.w };
+  return { w:l.w, h:l.w * img.naturalHeight / img.naturalWidth };
+}
+function drawImgLayers(c, side, showSel){
+  for (const l of state.imgLayers[side]){
+    const img = state.imgLayerObjs[l.id];
+    if (!img || !img.complete || !img.naturalWidth) continue;
+    const { w, h } = imgLayerSize(l);
+    c.save();
+    c.globalAlpha = l.op;
+    c.translate(l.x, l.y); c.rotate((l.rot || 0) * Math.PI / 180);
+    c.drawImage(img, -w/2, -h/2, w, h);
+    if (showSel && state.selectedImgLayer === l.id){
+      c.strokeStyle = '#7479ff'; c.lineWidth = 3; c.setLineDash([10,7]);
+      c.strokeRect(-w/2 - 8, -h/2 - 8, w + 16, h + 16);
+    }
+    c.restore();
+  }
+}
+
+function textMetrics(c, t){
+  c.font = `${t.weight} ${t.size}px ${t.font}`;
+  const sp = t.spacing || 0;
+  if (t.vert){
+    const chars = [...(t.text || ' ')];
+    let w = 10;
+    for (const ch of chars) w = Math.max(w, c.measureText(ch).width);
+    return { w, h: t.size * 1.15 + Math.max(0, chars.length - 1) * (t.size * 1.15 + sp), chars };
+  }
+  const lines = (t.text || ' ').split('\n');
+  let w = 10;
+  for (const ln of lines) w = Math.max(w, spacedWidth(c, ln || ' ', sp));
+  return { w, h: t.size * 1.25 + (lines.length - 1) * t.size * 1.3, chars: null, lines };
+}
+function textBox(c, t){
+  const m = textMetrics(c, t);
+  const rad = (t.rot || 0) * Math.PI / 180;
+  const bw = Math.abs(m.w * Math.cos(rad)) + Math.abs(m.h * Math.sin(rad));
+  const bh = Math.abs(m.w * Math.sin(rad)) + Math.abs(m.h * Math.cos(rad));
+  return { x:t.x - bw/2, y:t.y - bh/2, w:bw, h:bh };
+}
+
+function render(c, side, opts = {}){
+  const guides = !!opts.guides, showSel = !!opts.selection;
+  c.clearRect(0, 0, W, H);
+  for (const def of PANELS[side]){
+    const p = state.panels[def.id];
+    c.fillStyle = p.bg; c.fillRect(def.x, 0, def.w, H);
+    drawPanelImage(c, def, p);
+  }
+  if (state.spineFill && state.spineFill.on){
+    const sd = PANELS[side].find(pn => pn.id.includes('spine'));
+    if (sd){
+      c.save();
+      c.globalAlpha = state.spineFill.op;
+      c.fillStyle = state.spineFill.color;
+      c.fillRect(sd.x, 0, sd.w, H);
+      c.restore();
+    }
+  }
+  drawSpine(c, side);
+  drawTracklist(c, side);
+  drawImgLayers(c, side, showSel);
+  if (showSel && state.spineSel && side === 'front'){
+    const b = spineTextBoxes(c).find(v => v.kind === state.spineSel);
+    if (b){
+      c.save(); c.strokeStyle = '#7479ff'; c.lineWidth = 3; c.setLineDash([10,7]);
+      c.strokeRect(b.x, b.y, b.w, b.h); c.restore();
+    }
+  }
+  for (const t of state.texts[side]){
+    c.save();
+    c.translate(t.x, t.y); c.rotate((t.rot || 0) * Math.PI / 180);
+    c.font = `${t.weight} ${t.size}px ${t.font}`;
+    c.fillStyle = t.color; c.textAlign = 'center'; c.textBaseline = 'middle';
+    const m = textMetrics(c, t);
+    if (t.vert){
+      const step = t.size * 1.15 + (t.spacing || 0);
+      m.chars.forEach((ch, i) => { if (ch !== ' ') c.fillText(ch, 0, (i - (m.chars.length - 1) / 2) * step); });
+    } else {
+      const lines = m.lines || [t.text];
+      const lh = t.size * 1.3;
+      lines.forEach((ln, i) => {
+        const yy = (i - (lines.length - 1) / 2) * lh;
+        if (!ln) return;
+        if (t.spacing) drawSpacedLine(c, ln, 0, yy, t.spacing); else c.fillText(ln, 0, yy);
+      });
+    }
+    if (showSel && state.selectedText === t.id){
+      c.strokeStyle = '#7479ff'; c.lineWidth = 3; c.setLineDash([10,7]);
+      c.strokeRect(-m.w/2 - 10, -m.h/2 - 8, m.w + 20, m.h + 16);
+    }
+    c.restore();
+  }
+  if (guides){
+    c.save();
+    // cut border
+    c.strokeStyle = '#ff2a2a'; c.lineWidth = 5; c.strokeRect(2.5, 2.5, W-5, H-5);
+    // fold lines
+    c.strokeStyle = 'rgba(20,20,20,.55)'; c.lineWidth = 2.5; c.setLineDash([16,10]);
+    for (const def of PANELS[side].slice(1)){
+      c.beginPath(); c.moveTo(def.x, 0); c.lineTo(def.x, H); c.stroke();
+    }
+    c.setLineDash([]);
+    // panel labels
+    c.textAlign = 'left'; c.textBaseline = 'top';
+    for (const def of PANELS[side]){
+      const label = `${def.name} ${def.w}px`;
+      let fs = 25;
+      c.font = `700 ${fs}px 'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif`;
+      while (fs > 13 && c.measureText(label).width > def.w - 40){ fs -= 2; c.font = `700 ${fs}px 'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif`; }
+      const tw = c.measureText(label).width + 22;
+      c.fillStyle = (showSel && state.selectedPanel === def.id) ? 'rgba(232,179,75,.92)' : 'rgba(20,20,25,.78)';
+      c.fillRect(def.x + 8, 10, Math.min(tw, def.w - 16), 40);
+      c.fillStyle = (showSel && state.selectedPanel === def.id) ? '#191a1e' : '#fff';
+      c.save(); c.beginPath(); c.rect(def.x + 8, 10, def.w - 16, 40); c.clip();
+      c.fillText(label, def.x + 19, 17); c.restore();
+    }
+    c.restore();
+  }
+}
+
+function renderMain(){
+  render(ctx, state.side, { guides: state.guides, selection: true });
+}
+
+function renderToCanvas(side){
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  render(cv.getContext('2d'), side, { guides:false, selection:false });
+  return cv;
+}
+
+/* ---------- export helpers: DPI patches ---------- */
+function crc32(buf){
+  let table = crc32.t;
+  if (!table){
+    table = crc32.t = new Int32Array(256);
+    for (let n = 0; n < 256; n++){ let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; table[n] = c; }
+  }
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < buf.length; i++) c = table[(c ^ buf[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+async function canvasPng300(cv){
+  const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  // pHYs chunk: 11811 px/m = 300 dpi
+  const chunk = new Uint8Array(21);
+  const dv = new DataView(chunk.buffer);
+  dv.setUint32(0, 9);
+  chunk.set([0x70,0x48,0x59,0x73], 4); // pHYs
+  dv.setUint32(8, 11811); dv.setUint32(12, 11811); chunk[16] = 1;
+  dv.setUint32(17, crc32(chunk.subarray(4, 17)));
+  const ihdrLen = new DataView(bytes.buffer).getUint32(8);
+  const at = 8 + 12 + ihdrLen;
+  const out = new Uint8Array(bytes.length + chunk.length);
+  out.set(bytes.subarray(0, at), 0); out.set(chunk, at); out.set(bytes.subarray(at), at + chunk.length);
+  return new Blob([out], { type:'image/png' });
+}
+async function canvasJpg300(cv){
+  const blob = await new Promise(r => cv.toBlob(r, 'image/jpeg', 0.95));
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  if (bytes[0] === 0xFF && bytes[2] === 0xFF && bytes[3] === 0xE0){
+    bytes[13] = 1; // unit = inch
+    bytes[14] = 300 >> 8; bytes[15] = 300 & 255;
+    bytes[16] = 300 >> 8; bytes[17] = 300 & 255;
+  }
+  return new Blob([bytes], { type:'image/jpeg' });
+}
+function download(blob, name){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+const sideName = s => s === 'front' ? 'front' : 'back';
+
+async function exportImage(side, kind){
+  const cv = renderToCanvas(side);
+  if (kind === 'png') download(await canvasPng300(cv), `jcard_${sideName(side)}_${W}x${H}_300dpi.png`);
+  else download(await canvasJpg300(cv), `jcard_${sideName(side)}_${W}x${H}_300dpi.jpg`);
+}
+
+/* minimal PDF writer: pages = [{jpg, wMm, hMm, pxW, pxH}] */
+function makePdf(pages){
+  const enc = new TextEncoder();
+  const parts = []; let len = 0;
+  const push = b => { parts.push(b); len += b.length; };
+  const pushStr = s2 => push(enc.encode(s2));
+  const offsets = [0];
+  pushStr('%PDF-1.4\n');
+  const obj = (num, bodyFn) => { offsets[num] = len; pushStr(`${num} 0 obj\n`); bodyFn(); pushStr('\nendobj\n'); };
+  const n = pages.length;
+  const pageObj = i => 3 + i*3, imgObj = i => 4 + i*3, contObj = i => 5 + i*3;
+  obj(1, () => pushStr('<< /Type /Catalog /Pages 2 0 R >>'));
+  obj(2, () => pushStr(`<< /Type /Pages /Kids [${pages.map((_,i)=>`${pageObj(i)} 0 R`).join(' ')}] /Count ${n} >>`));
+  pages.forEach((pg, i) => {
+    const pw = pg.wMm * 72 / 25.4, ph = pg.hMm * 72 / 25.4;
+    obj(pageObj(i), () => pushStr(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pw.toFixed(2)} ${ph.toFixed(2)}] /Resources << /XObject << /Im${i} ${imgObj(i)} 0 R >> >> /Contents ${contObj(i)} 0 R >>`));
+    obj(imgObj(i), () => {
+      pushStr(`<< /Type /XObject /Subtype /Image /Width ${pg.pxW} /Height ${pg.pxH} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${pg.jpg.length} >>\nstream\n`);
+      push(pg.jpg); pushStr('\nendstream');
+    });
+    const content = `q ${pw.toFixed(2)} 0 0 ${ph.toFixed(2)} 0 0 cm /Im${i} Do Q`;
+    obj(contObj(i), () => pushStr(`<< /Length ${content.length} >>\nstream\n${content}\nendstream`));
+  });
+  const xrefAt = len;
+  const total = 3 + n*3;
+  let xref = `xref\n0 ${total}\n0000000000 65535 f \n`;
+  for (let i = 1; i < total; i++) xref += `${String(offsets[i]).padStart(10,'0')} 00000 n \n`;
+  pushStr(xref + `trailer\n<< /Size ${total} /Root 1 0 R >>\nstartxref\n${xrefAt}\n%%EOF`);
+  return new Blob(parts, { type:'application/pdf' });
+}
+
+/* A4 page (2480x3508px = A4 at 300dpi) with the card placed at exact size */
+const A4_PX_W = 2480, A4_PX_H = 3508;
+function buildA4PageCanvas(side){
+  const cv = document.createElement('canvas'); cv.width = A4_PX_W; cv.height = A4_PX_H;
+  const c = cv.getContext('2d');
+  c.fillStyle = '#ffffff'; c.fillRect(0, 0, A4_PX_W, A4_PX_H);
+  const card = renderToCanvas(side);
+  const dup = $('printDup') && $('printDup').value === '2';
+  const x = Math.round((A4_PX_W - W) / 2);
+  let pos;
+  if (dup){
+    const y0 = Math.round((A4_PX_H - (H * 2 + 71)) / 2);
+    pos = [[x, y0], [x, y0 + H + 71]];
+  } else pos = [[x, 118]];
+  for (const [px, py] of pos) c.drawImage(card, px, py);
+  const guideOn = !$('printGuide') || $('printGuide').value !== 'off';
+  if (guideOn){
+    c.save();
+    c.globalCompositeOperation = 'difference';
+    c.strokeStyle = '#ffffff'; c.lineWidth = 4; c.setLineDash([18, 12]);
+    for (const [px, py] of pos) c.strokeRect(px + 2, py + 2, W - 4, H - 4);
+    c.restore();
+  }
+  return cv;
+}
+
+/* pages for the current export-dialog selection: [{label, canvas, wMm, hMm}] */
+function buildExportPages(){
+  const fmt = $('expFormat').value, content = $('expContent').value;
+  const cardPage = (side) => ({ label: side === 'front' ? 'おもて面' : 'うら面', canvas: renderToCanvas(side), wMm: MM_W, hMm: MM_H });
+  const a4Page = (side) => ({ label: (side === 'front' ? 'おもて面' : 'うら面') + '・A4', canvas: buildA4PageCanvas(side), wMm: 210, hMm: 297 });
+  if (fmt === 'print'){
+    const sides = content === 'both' ? ['front','back'] : content === 'current' ? [state.side] : [content];
+    return $('printPaper').value === 'a4' ? sides.map(a4Page) : sides.map(cardPage);
+  }
+  if (content === 'card-both' || content === 'both') return [cardPage('front'), cardPage('back')];
+  if (content === 'front') return [cardPage('front')];
+  if (content === 'back') return [cardPage('back')];
+  if (content === 'a4-front') return [a4Page('front')];
+  if (content === 'a4-back') return [a4Page('back')];
+  if (content === 'a4-both') return [a4Page('front'), a4Page('back')];
+  return [];
+}
+
+/* ---------- custom fonts ---------- */
+function fontValueFor(name){ return `'${String(name).replace(/'/g, '')}'`; }
+function refreshFontSelects(){
+  for (const selId of ['teFont','fontTitle','fontArtist','fontCatalog','tlFont']){
+    const sel = $(selId); if (!sel) continue;
+    const cur = sel.value;
+    sel.innerHTML = '';
+    for (const f of BASE_FONTS){
+      const o = document.createElement('option'); o.value = f.value; o.textContent = f.label; sel.appendChild(o);
+    }
+    if (state.customFonts.length){
+      const g = document.createElement('optgroup'); g.label = '読み込んだフォント';
+      for (const f of state.customFonts){
+        const o = document.createElement('option'); o.value = fontValueFor(f.name); o.textContent = f.name; g.appendChild(o);
+      }
+      sel.appendChild(g);
+    }
+    if (cur) sel.value = cur;
+  }
+  // keep selects in sync with state where a select has no own value yet
+  { const sp2 = state.spine;
+    if ($('fontTitle')) $('fontTitle').value = sp2.fontTitle || sp2.font || $('fontTitle').options[0].value;
+    if ($('fontArtist')) $('fontArtist').value = sp2.fontArtist || sp2.font || $('fontArtist').options[0].value;
+    if ($('fontCatalog')) $('fontCatalog').value = sp2.fontCatalog || sp2.font || $('fontCatalog').options[0].value; }
+  if ($('tlFont') && state.tracklist.font) $('tlFont').value = state.tracklist.font;
+}
+async function registerFont(name, dataUrl){
+  try {
+    const buf = await (await fetch(dataUrl)).arrayBuffer();
+    const face = new FontFace(fontValueFor(name).slice(1,-1), buf);
+    await face.load();
+    document.fonts.add(face);
+    return true;
+  } catch(e){ return false; }
+}
+
+/* ---------- UI wiring ---------- */
+function refreshPanelBtns(){
+  const wrap = $('panelBtns'); wrap.innerHTML = '';
+  for (const def of PANELS[state.side]){
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = def.id === state.selectedPanel ? 'active' : '';
+    b.innerHTML = `<span>${def.name}</span><span class="dim">${def.w}px ＝ ${(def.w/300*25.4).toFixed(1)}mm</span>`;
+    b.onclick = () => { state.selectedPanel = def.id; state.selectedText = null; state.selectedImgLayer = null; refreshPanelBtns(); syncPanelControls(); renderMain(); refreshTextList(); };
+    wrap.appendChild(b);
+  }
+  const cur = PANELS[state.side].find(p => p.id === state.selectedPanel);
+  if (cur){ $('panelTarget').textContent = `選択中の部位：${cur.name}（${state.side === 'front' ? 'おもて面' : 'うら面'}）― 画像と文字の追加先`; $('panelText').placeholder = cur.name + 'に入れる文字（改行できます）'; }
+}
+function syncPanelControls(){
+  const p = state.panels[state.selectedPanel];
+  $('panelBg').value = p.bg;
+  $('fitSel').value = p.fit;
+  $('imgScale').value = Math.round(p.scale * 100);
+  $('imgScaleVal').textContent = Math.round(p.scale * 100) + '%';
+  $('imgRot').value = p.rot || 0;
+  $('imgRotVal').textContent = (p.rot || 0) + '°';
+}
+function setSide(side){
+  state.side = side;
+  state.selectedPanel = PANELS[side][0].id === 'back_flap' ? 'back_main' : PANELS[side][0].id;
+  if (side === 'back') state.selectedPanel = 'back_main';
+  state.selectedText = null;
+  state.selectedImgLayer = null;
+  $('tabFront').classList.toggle('active', side === 'front');
+  $('tabBack').classList.toggle('active', side === 'back');
+  const LP = PANELS[side];
+  const mmOf = px => (px * 25.4 / 300).toFixed(1);
+  $('layoutNote').textContent = side === 'front'
+    ? `おもて面の並び（左→右）： ${LP[0].name} ${LP[0].w}px（${mmOf(LP[0].w)}mm）｜ ${LP[1].name} ${LP[1].w}px（${mmOf(LP[1].w)}mm）｜ ${LP[2].name} ${LP[2].w}px（${mmOf(LP[2].w)}mm）\n高さ ${H}px ＝ ${mmOf(H)}mm。赤枠は切り取り線、破線は折り線です（書き出しには入りません）。`
+    : `うら面の並び（左→右）： ${LP[0].name} ${LP[0].w}px（${mmOf(LP[0].w)}mm）｜ ${LP[1].name} ${LP[1].w}px（${mmOf(LP[1].w)}mm）｜ ${LP[2].name} ${LP[2].w}px（${mmOf(LP[2].w)}mm）\nおもて面と左右が逆になります（同じ紙の裏側なので、折ると背どうし・フラップどうしが重なります）。`;
+  refreshPanelBtns(); syncPanelControls(); refreshTextList(); renderMain();
+}
+$('tabFront').onclick = () => setSide('front');
+$('tabBack').onclick = () => setSide('back');
+let autoFit = true, fitting = false;
+function applyZoom(z){
+  $('zoomRange').value = z;
+  $('zoomVal').textContent = z + '%';
+  stage.style.width = (W * z / 100) + 'px';
+  stage.style.height = (H * z / 100) + 'px';
+}
+function fitZoom(){
+  const wrap = document.querySelector('.canvasWrap');
+  if (!wrap || !wrap.clientWidth) return;
+  const z = Math.max(20, Math.min(110, Math.floor(Math.min((wrap.clientWidth - 30) / W, (wrap.clientHeight - 30) / H) * 100)));
+  fitting = true; applyZoom(z); fitting = false;
+}
+$('zoomRange').oninput = e => { if (!fitting) autoFit = false; applyZoom(+e.target.value); };
+$('btnFit').onclick = () => { autoFit = true; fitZoom(); };
+let resizeTimer = null;
+window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (autoFit) fitZoom(); }, 200); });
+applyZoom(52);
+$('guideChk').onchange = e => { state.guides = e.target.checked; renderMain(); };
+
+$('panelBg').oninput = e => { state.panels[state.selectedPanel].bg = e.target.value; renderMain(); };
+$('btnBgAll').onclick = () => {
+  const col = state.panels[state.selectedPanel].bg;
+  PANELS[state.side].forEach(d => state.panels[d.id].bg = col);
+  renderMain();
+};
+$('fitSel').onchange = e => { state.panels[state.selectedPanel].fit = e.target.value; renderMain(); };
+$('imgScale').oninput = e => {
+  state.panels[state.selectedPanel].scale = +e.target.value / 100;
+  $('imgScaleVal').textContent = e.target.value + '%'; renderMain();
+};
+$('imgRot').oninput = e => {
+  state.panels[state.selectedPanel].rot = +e.target.value;
+  $('imgRotVal').textContent = e.target.value + '°'; renderMain();
+};
+$('btnImgReset').onclick = () => {
+  const p = state.panels[state.selectedPanel]; p.scale = 1; p.dx = 0; p.dy = 0; p.rot = 0; syncPanelControls(); renderMain();
+};
+$('btnImgDel').onclick = () => {
+  const id = state.selectedPanel;
+  state.panels[id].img = null; delete state.imgObjs[id];
+  $('imgFile').value = ''; renderMain();
+};
+$('imgFile').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const id = state.selectedPanel;
+  const rd = new FileReader();
+  rd.onload = () => {
+    state.panels[id].img = rd.result;
+    const im = new Image();
+    im.onload = () => { state.imgObjs[id] = im; renderMain(); };
+    im.src = rd.result;
+  };
+  rd.readAsDataURL(f);
+};
+
+/* spine */
+$('spineTitle').oninput = e => { state.spine.title = e.target.value; renderMain(); };
+$('spineArtist').oninput = e => { state.spine.artist = e.target.value; renderMain(); };
+$('spineSize').oninput = e => { state.spine.size = +e.target.value; $('spineSizeVal').textContent = e.target.value + 'px'; renderMain(); };
+$('spineArtistSize').oninput = e => { state.spine.artistSize = +e.target.value; $('spineArtistSizeVal').textContent = e.target.value + 'px'; renderMain(); };
+$('spineColor').oninput = e => { state.spine.color = e.target.value; renderMain(); };
+$('spineDir').onchange = e => { state.spine.dir = e.target.value; renderMain(); };
+$('fontTitle').onchange = e => { state.spine.fontTitle = e.target.value; state.spine.font = e.target.value; renderMain(); };
+$('fontArtist').onchange = e => { state.spine.fontArtist = e.target.value; renderMain(); };
+$('fontCatalog').onchange = e => { state.spine.fontCatalog = e.target.value; renderMain(); };
+$('spineSpacing').oninput = e => { state.spine.spacing = +e.target.value; $('spineSpacingVal').textContent = e.target.value + 'px'; renderMain(); };
+$('spineTitlePos').oninput = e => { state.spine.titlePos = +e.target.value; $('spineTitlePosVal').textContent = e.target.value + 'px'; renderMain(); };
+$('spineArtistPos').oninput = e => { state.spine.artistPos = +e.target.value; $('spineArtistPosVal').textContent = e.target.value + 'px'; renderMain(); };
+$('spineCatalog').oninput = e => { state.spine.catalog = e.target.value; renderMain(); };
+$('spineCatPos').oninput = e => { state.spine.catPos = +e.target.value; $('spineCatPosVal').textContent = '下端から' + e.target.value + 'px'; renderMain(); };
+$('spineCatSize').oninput = e => { state.spine.catalogSize = +e.target.value; $('spineCatSizeVal').textContent = e.target.value + 'px'; renderMain(); };
+$('fillOn').onchange = e => { state.spineFill.on = e.target.checked; renderMain(); };
+$('fillColor').oninput = e => { state.spineFill.color = e.target.value; renderMain(); };
+$('fillOp').oninput = e => { state.spineFill.op = +e.target.value / 100; $('fillOpVal').textContent = e.target.value + '%'; renderMain(); };
+
+$('tplSel').onchange = e => applyTemplate(e.target.value, true);
+
+/* tracklist */
+$('tlOn').onchange = e => { state.tracklist.on = e.target.checked; renderMain(); };
+$('tlPanel').onchange = e => { state.tracklist.panel = e.target.value; const want = e.target.value === 'front_flap' ? 'front' : 'back'; if (state.side !== want) setSide(want); else renderMain(); };
+$('tlText').oninput = e => {
+  const had = state.tracklist.text.trim().length > 0;
+  state.tracklist.text = e.target.value;
+  if (!had && e.target.value.trim()){
+    // 入力したら自動で表示ONにし、置く場所の面のプレビューへ切り替える
+    state.tracklist.on = true; $('tlOn').checked = true;
+    const want = (state.tracklist.panel === 'front_flap') ? 'front' : 'back';
+    if (state.side !== want) setSide(want); else renderMain();
+    return;
+  }
+  renderMain();
+};
+$('tlSize').oninput = e => { state.tracklist.size = +e.target.value; $('tlSizeVal').textContent = e.target.value + 'px'; renderMain(); };
+$('tlColor').oninput = e => { state.tracklist.color = e.target.value; renderMain(); };
+$('tlFont').onchange = e => { state.tracklist.font = e.target.value; renderMain(); };
+$('tlSpacing').oninput = e => { state.tracklist.spacing = +e.target.value; $('tlSpacingVal').textContent = e.target.value + 'px'; renderMain(); };
+$('tlRot').oninput = e => { state.tracklist.rot = +e.target.value; $('tlRotVal').textContent = e.target.value + '°'; renderMain(); };
+
+/* custom font file */
+$('fontFile').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const name = f.name.replace(/\.(ttf|otf|woff2?|TTF|OTF|WOFF2?)$/, '').trim() || 'CustomFont';
+  const rd = new FileReader();
+  rd.onload = async () => {
+    const existing = state.customFonts.findIndex(v => v.name === name);
+    const entry = { name, data: rd.result };
+    if (existing >= 0) state.customFonts[existing] = entry; else state.customFonts.push(entry);
+    const ok = await registerFont(name, rd.result);
+    refreshFontSelects();
+    $('fontStatus').textContent = ok
+      ? `フォント「${name}」を読み込みました。背・文字レイヤー・曲目リストのフォント欄で選べます。プロジェクトにも保存されます。`
+      : `フォント「${name}」の登録に失敗しました。対応形式は TTF / OTF / WOFF / WOFF2 です。`;
+    renderMain();
+  };
+  rd.readAsDataURL(f);
+  e.target.value = '';
+};
+$('btnCopyFontPath').onclick = () => {
+  if (navigator.clipboard) navigator.clipboard.writeText('C:\\Windows\\Fonts').catch(() => {});
+};
+
+/* text layers */
+let textSeq = 1;
+function refreshTextList(){
+  const wrap = $('textList'); wrap.innerHTML = '';
+  for (const t of state.texts[state.side]){
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = '文字：' + (t.text || '(空)');
+    b.className = state.selectedText === t.id ? 'active' : '';
+    b.onclick = () => { state.selectedText = t.id; state.selectedImgLayer = null; syncTextEdit(); refreshTextList(); renderMain(); };
+    wrap.appendChild(b);
+  }
+  for (const l of state.imgLayers[state.side]){
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = '画像：' + (l.name || '画像レイヤー');
+    b.className = state.selectedImgLayer === l.id ? 'active' : '';
+    b.onclick = () => { state.selectedImgLayer = l.id; state.selectedText = null; syncTextEdit(); refreshTextList(); renderMain(); };
+    wrap.appendChild(b);
+  }
+  syncTextEdit();
+}
+function selectedImgLayerObj(){ return state.imgLayers[state.side].find(l => l.id === state.selectedImgLayer) || null; }
+function selectedTextObj(){ return state.texts[state.side].find(t => t.id === state.selectedText) || null; }
+function syncTextEdit(){
+  const t = selectedTextObj();
+  $('textEdit').style.display = t ? 'block' : 'none';
+  if (t){
+    $('teText').value = t.text; $('teSize').value = t.size;
+    $('teSizeVal').textContent = t.size + 'px';
+    $('teRot').value = t.rot || 0; $('teRotVal').textContent = (t.rot || 0) + '°';
+    $('teVert').value = t.vert ? 'v' : 'h';
+    $('teSpacing').value = t.spacing || 0; $('teSpacingVal').textContent = (t.spacing || 0) + 'px';
+    $('teColor').value = t.color; $('teWeight').value = String(t.weight); $('teFont').value = t.font;
+  }
+  const l = selectedImgLayerObj();
+  const head = $('layerEditHead'), box = $('layerEditBox');
+  if (t){ head.textContent = '編集中：文字「' + (t.text || '(空)') + '」'; head.className = 'editHead'; box.classList.add('active'); }
+  else if (l){ head.textContent = '編集中：画像「' + (l.name || '画像レイヤー') + '」'; head.className = 'editHead'; box.classList.add('active'); }
+  else { head.textContent = '上のレイヤー一覧かプレビューでレイヤーを選ぶと、ここで編集できます'; head.className = 'editHead idle'; box.classList.remove('active'); }
+  $('imgLayerEdit').style.display = l ? 'block' : 'none';
+  if (l){
+    $('ilW').value = Math.round(l.w); $('ilWVal').textContent = Math.round(l.w) + 'px';
+    $('ilRot').value = l.rot || 0; $('ilRotVal').textContent = (l.rot || 0) + '°';
+    $('ilOp').value = Math.round(l.op * 100); $('ilOpVal').textContent = Math.round(l.op * 100) + '%';
+  }
+}
+function addTextToSelectedPanel(v){
+  v = (v || '').trim(); if (!v) return;
+  const def = panelDef(state.side, state.selectedPanel);
+  const t = { id:'t' + (textSeq++), text:v, x:def.x + def.w/2, y:H/2, size:64, color:'#111111',
+              font:`'Hiragino Kaku Gothic ProN','Hiragino Sans','Yu Gothic',sans-serif`, weight:400, rot:0, vert:false, spacing:0 };
+  state.texts[state.side].push(t);
+  state.selectedText = t.id; state.selectedImgLayer = null; state.spineSel = null;
+  refreshTextList(); renderMain();
+}
+$('btnAddText').onclick = () => { addTextToSelectedPanel($('newText').value); $('newText').value = ''; };
+$('btnAddPanelText').onclick = () => { addTextToSelectedPanel($('panelText').value); $('panelText').value = ''; $('panelText').focus(); };
+$('panelText').addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter'){ e.preventDefault(); $('btnAddPanelText').click(); } });
+$('newText').addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); $('btnAddText').click(); } });
+let imgLayerSeq = 1;
+$('layerImgFile').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    const im = new Image();
+    im.onload = () => {
+      const def = panelDef(state.side, state.selectedPanel);
+      const l = { id:'i' + (imgLayerSeq++), src:rd.result, name:f.name,
+                  x:def.x + def.w/2, y:H/2, w:Math.min(420, im.naturalWidth || 420), rot:0, op:1 };
+      state.imgLayerObjs[l.id] = im;
+      state.imgLayers[state.side].push(l);
+      state.selectedImgLayer = l.id; state.selectedText = null; state.spineSel = null;
+      refreshTextList(); renderMain();
+    };
+    im.src = rd.result;
+  };
+  rd.readAsDataURL(f);
+  e.target.value = '';
+};
+$('ilW').oninput = e => { const l = selectedImgLayerObj(); if (l){ l.w = +e.target.value; $('ilWVal').textContent = e.target.value + 'px'; renderMain(); } };
+$('ilRot').oninput = e => { const l = selectedImgLayerObj(); if (l){ l.rot = +e.target.value; $('ilRotVal').textContent = e.target.value + '°'; renderMain(); } };
+$('ilOp').oninput = e => { const l = selectedImgLayerObj(); if (l){ l.op = +e.target.value / 100; $('ilOpVal').textContent = e.target.value + '%'; renderMain(); } };
+$('btnDelImgLayer').onclick = () => {
+  state.imgLayers[state.side] = state.imgLayers[state.side].filter(l => l.id !== state.selectedImgLayer);
+  state.selectedImgLayer = null; refreshTextList(); renderMain();
+};
+$('btnIlFront').onclick = () => {
+  const arr = state.imgLayers[state.side]; const i = arr.findIndex(l => l.id === state.selectedImgLayer);
+  if (i >= 0 && i < arr.length - 1){ const [l] = arr.splice(i, 1); arr.push(l); refreshTextList(); renderMain(); }
+};
+$('btnIlBack').onclick = () => {
+  const arr = state.imgLayers[state.side]; const i = arr.findIndex(l => l.id === state.selectedImgLayer);
+  if (i > 0){ const [l] = arr.splice(i, 1); arr.unshift(l); refreshTextList(); renderMain(); }
+};
+$('teText').oninput = e => { const t = selectedTextObj(); if (t){ t.text = e.target.value; refreshTextListSoft(); renderMain(); } };
+function refreshTextListSoft(){
+  // update labels without rebuilding edit focus
+  const btns = $('textList').children;
+  state.texts[state.side].forEach((t, i) => { if (btns[i]) btns[i].textContent = t.text || '(空)'; });
+}
+$('teSize').oninput = e => { const t = selectedTextObj(); if (t){ t.size = +e.target.value; $('teSizeVal').textContent = e.target.value + 'px'; renderMain(); } };
+$('teRot').oninput = e => { const t = selectedTextObj(); if (t){ t.rot = +e.target.value; $('teRotVal').textContent = e.target.value + '°'; renderMain(); } };
+$('teVert').onchange = e => { const t = selectedTextObj(); if (t){ t.vert = e.target.value === 'v'; renderMain(); } };
+$('teSpacing').oninput = e => { const t = selectedTextObj(); if (t){ t.spacing = +e.target.value; $('teSpacingVal').textContent = e.target.value + 'px'; renderMain(); } };
+$('teColor').oninput = e => { const t = selectedTextObj(); if (t){ t.color = e.target.value; renderMain(); } };
+$('teWeight').onchange = e => { const t = selectedTextObj(); if (t){ t.weight = +e.target.value; renderMain(); } };
+$('teFont').onchange = e => { const t = selectedTextObj(); if (t){ t.font = e.target.value; renderMain(); } };
+$('btnDelText').onclick = () => {
+  state.texts[state.side] = state.texts[state.side].filter(t => t.id !== state.selectedText);
+  state.selectedText = null; refreshTextList(); renderMain();
+};
+
+function spineTextBoxes(c){
+  const boxes = [];
+  if (state.side !== 'front') return boxes;
+  const s = state.spine;
+  if (!s.title && !s.artist && !s.catalog) return boxes;
+  const def = panelDef('front','front_spine');
+  const cx = def.x + def.w/2;
+  const fonts = spineFonts(s); const fontT = fonts.t, fontA = fonts.a, fontC = fonts.c;
+  const spacing = s.spacing || 0;
+  const aSize = s.artistSize != null ? s.artistSize : 58;
+  const ccw = s.dir === 'ccw';
+  const segs = [];
+  if (s.artist) segs.push({ kind:'artist', text:s.artist, size:aSize, pos:s.artistPos || 0, font:fontA });
+  if (s.title) segs.push({ kind:'title', text:s.title, size:s.size, pos:s.titlePos || 0, font:fontT });
+  if (segs.length){
+    const gap = segs.length > 1 ? Math.round(s.size * 0.9) : 0;
+    const widths = segs.map(sg => { c.font = `400 ${sg.size}px ${sg.font}`; return spacedWidth(c, sg.text, spacing); });
+    const total = widths.reduce((a, b) => a + b, 0) + gap * (segs.length - 1);
+    let acc = -total / 2;
+    segs.forEach((sg, i) => {
+      const o = acc + widths[i] / 2;
+      const cy = H/2 + o + sg.pos;
+      boxes.push({ kind:sg.kind, x:cx - sg.size*0.65 - 4, y:cy - widths[i] / 2 - 8, w:sg.size*1.3 + 8, h:widths[i] + 16 });
+      acc += widths[i] + gap;
+    });
+  }
+  if (s.catalog){
+    const cs = s.catalogSize || 36;
+    c.font = `400 ${cs}px ${fontC}`;
+    const cw = spacedWidth(c, s.catalog, spacing);
+    const cy = H - 70 - (s.catPos || 0) - cw/2;
+    boxes.push({ kind:'catalog', x:cx - cs*0.65 - 4, y:cy - cw/2 - 8, w:cs*1.3 + 8, h:cw + 16 });
+  }
+  return boxes;
+}
+function syncSpinePosUI(){
+  const s = state.spine;
+  $('spineTitlePos').value = s.titlePos || 0; $('spineTitlePosVal').textContent = (s.titlePos || 0) + 'px';
+  $('spineArtistPos').value = s.artistPos || 0; $('spineArtistPosVal').textContent = (s.artistPos || 0) + 'px';
+  $('spineCatPos').value = s.catPos || 0; $('spineCatPosVal').textContent = '下端から' + (s.catPos || 0) + 'px';
+}
+function applySpineDrag(part, orig, dyScreen){
+  const s = state.spine;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, Math.round(v)));
+  if (part === 'catalog'){ s.catPos = clamp(orig - dyScreen, 0, 500); }
+  else {
+    const v = clamp(orig + dyScreen, -560, 560);
+    if (part === 'title') s.titlePos = v; else s.artistPos = v;
+  }
+  syncSpinePosUI();
+}
+
+/* スライダーの値表示をクリックすると、その場で数値を直接入力できる */
+document.querySelectorAll('input[type="range"]').forEach(r => {
+  const span = document.getElementById(r.id + 'Val') || document.getElementById(r.id.replace(/Range$/, '') + 'Val');
+  if (!span) return;
+  span.title = 'クリックで数値を直接入力';
+  span.addEventListener('click', () => {
+    if (span.querySelector('input')) return;
+    const cur = span.textContent;
+    const inp = document.createElement('input');
+    inp.type = 'number'; inp.value = r.value;
+    if (r.min !== '') inp.min = r.min;
+    if (r.max !== '') inp.max = r.max;
+    inp.step = r.step || '1';
+    inp.style.cssText = 'width:78px;font-size:13px;padding:2px 4px';
+    span.textContent = ''; span.appendChild(inp);
+    inp.focus(); inp.select();
+    let done = false;
+    const commit = ok => {
+      if (done) return; done = true;
+      if (ok){
+        let v = parseFloat(inp.value);
+        if (!isNaN(v)){
+          const mn = parseFloat(r.min), mx = parseFloat(r.max);
+          if (!isNaN(mn)) v = Math.max(mn, v);
+          if (!isNaN(mx)) v = Math.min(mx, v);
+          r.value = v;
+          r.dispatchEvent(new Event('input', { bubbles: true }));
+          if (span.contains(inp)){
+            const m = cur.match(/^(.*?)(-?[\d.]+)(.*)$/s);
+            span.textContent = m ? m[1] + r.value + m[3] : String(r.value);
+          }
+          return;
+        }
+      }
+      if (span.contains(inp)) span.textContent = cur;
+    };
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Enter'){ e.preventDefault(); commit(true); }
+      else if (e.key === 'Escape'){ e.preventDefault(); commit(false); }
+    });
+    inp.addEventListener('blur', () => commit(true));
+  });
+});
+
+/* canvas drag */
+let drag = null;
+function canvasPos(e){
+  const r = stage.getBoundingClientRect();
+  return { x:(e.clientX - r.left) * W / r.width, y:(e.clientY - r.top) * H / r.height };
+}
+stage.addEventListener('pointerdown', e => {
+  const pos = canvasPos(e);
+  // text hit test (topmost last)
+  const list = state.texts[state.side];
+  for (let i = list.length - 1; i >= 0; i--){
+    const b = textBox(ctx, list[i]);
+    if (pos.x >= b.x - 12 && pos.x <= b.x + b.w + 12 && pos.y >= b.y - 10 && pos.y <= b.y + b.h + 10){
+      state.selectedText = list[i].id; state.selectedImgLayer = null; state.spineSel = null;
+      state.selectedPanel = panelAt(state.side, pos.x).id;
+      drag = { kind:'text', id:list[i].id, startX:pos.x, startY:pos.y, origX:list[i].x, origY:list[i].y };
+      stage.setPointerCapture(e.pointerId);
+      refreshPanelBtns(); syncPanelControls(); refreshTextList(); renderMain();
+      return;
+    }
+  }
+  // image layer hit test
+  const ilist = state.imgLayers[state.side];
+  for (let i = ilist.length - 1; i >= 0; i--){
+    const l = ilist[i]; const { w, h } = imgLayerSize(l);
+    if (pos.x >= l.x - w/2 - 8 && pos.x <= l.x + w/2 + 8 && pos.y >= l.y - h/2 - 8 && pos.y <= l.y + h/2 + 8){
+      state.selectedImgLayer = l.id; state.selectedText = null;
+      state.selectedPanel = panelAt(state.side, pos.x).id;
+      drag = { kind:'imglayer', id:l.id, startX:pos.x, startY:pos.y, origX:l.x, origY:l.y };
+      stage.setPointerCapture(e.pointerId);
+      refreshPanelBtns(); syncPanelControls(); refreshTextList(); renderMain();
+      return;
+    }
+  }
+  // spine text hit test (front side): drag moves it along the spine
+  if (state.side === 'front'){
+    const boxes = spineTextBoxes(ctx);
+    for (let i = boxes.length - 1; i >= 0; i--){
+      const b = boxes[i];
+      if (pos.x >= b.x && pos.x <= b.x + b.w && pos.y >= b.y && pos.y <= b.y + b.h){
+        state.spineSel = b.kind; state.selectedText = null; state.selectedImgLayer = null;
+        state.selectedPanel = 'front_spine';
+        const sp = state.spine;
+        drag = { kind:'spine', part:b.kind, startX:pos.x, startY:pos.y,
+                 orig: b.kind === 'title' ? (sp.titlePos || 0) : b.kind === 'artist' ? (sp.artistPos || 0) : (sp.catPos || 0) };
+        stage.setPointerCapture(e.pointerId);
+        refreshPanelBtns(); syncPanelControls(); refreshTextList(); renderMain();
+        return;
+      }
+    }
+  }
+  const def = panelAt(state.side, pos.x);
+  state.selectedPanel = def.id; state.selectedText = null; state.selectedImgLayer = null; state.spineSel = null;
+  const p = state.panels[def.id];
+  if (p.img) drag = { kind:'img', id:def.id, startX:pos.x, startY:pos.y, dx:p.dx, dy:p.dy };
+  stage.setPointerCapture(e.pointerId);
+  refreshPanelBtns(); syncPanelControls(); refreshTextList(); renderMain();
+});
+stage.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const pos = canvasPos(e);
+  let mx = pos.x - drag.startX, my = pos.y - drag.startY;
+  // Shiftキーを押している間は、動いた量が大きい方向（縦または横）だけに固定する
+  if (e.shiftKey){ if (Math.abs(mx) > Math.abs(my)) my = 0; else mx = 0; }
+  if (drag.kind === 'img'){
+    const p = state.panels[drag.id];
+    p.dx = drag.dx + mx; p.dy = drag.dy + my;
+  } else if (drag.kind === 'text'){
+    const t = state.texts[state.side].find(v => v.id === drag.id);
+    if (t){ t.x = drag.origX + mx; t.y = drag.origY + my; }
+  } else if (drag.kind === 'imglayer'){
+    const l = state.imgLayers[state.side].find(v => v.id === drag.id);
+    if (l){ l.x = drag.origX + mx; l.y = drag.origY + my; }
+  } else if (drag.kind === 'spine'){
+    // 背の文字：上下（背の方向）だけ。横は常に中央
+    applySpineDrag(drag.part, drag.orig, my);
+  }
+  renderMain();
+});
+stage.addEventListener('dblclick', e => {
+  const pos = canvasPos(e);
+  const list = state.texts[state.side];
+  for (let i = list.length - 1; i >= 0; i--){
+    const b = textBox(ctx, list[i]);
+    if (pos.x >= b.x - 12 && pos.x <= b.x + b.w + 12 && pos.y >= b.y - 10 && pos.y <= b.y + b.h + 10){
+      state.selectedText = list[i].id; state.selectedImgLayer = null; state.spineSel = null;
+      refreshTextList(); renderMain();
+      $('teText').scrollIntoView({ block:'nearest' });
+      $('teText').focus(); $('teText').select();
+      return;
+    }
+  }
+  const def = panelAt(state.side, pos.x);
+  state.selectedPanel = def.id; state.selectedText = null; state.selectedImgLayer = null; state.spineSel = null;
+  refreshPanelBtns(); syncPanelControls(); refreshTextList(); renderMain();
+  const inp = $('panelText');
+  inp.scrollIntoView({ block:'nearest' });
+  inp.focus();
+});
+stage.addEventListener('pointerup', () => drag = null);
+stage.addEventListener('pointercancel', () => drag = null);
+
+/* arrow-key nudge for the selected text / image layer / panel image */
+document.addEventListener('keydown', e => {
+  if (!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) return;
+  const tag = (document.activeElement || {}).tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+  const step = e.shiftKey ? 10 : 1;
+  const dx = e.key === 'ArrowRight' ? step : e.key === 'ArrowLeft' ? -step : 0;
+  const dy = e.key === 'ArrowDown' ? step : e.key === 'ArrowUp' ? -step : 0;
+  if (state.spineSel && state.side === 'front'){
+    const sp = state.spine;
+    const orig = state.spineSel === 'title' ? (sp.titlePos || 0) : state.spineSel === 'artist' ? (sp.artistPos || 0) : (sp.catPos || 0);
+    applySpineDrag(state.spineSel, orig, dy);
+    e.preventDefault(); renderMain(); return;
+  }
+  const t = selectedTextObj();
+  if (t){ t.x += dx; t.y += dy; }
+  else {
+    const l = selectedImgLayerObj();
+    if (l){ l.x += dx; l.y += dy; }
+    else {
+      const p = state.panels[state.selectedPanel];
+      if (!p || !p.img) return;
+      p.dx += dx; p.dy += dy;
+    }
+  }
+  e.preventDefault();
+  renderMain();
+});
+
+/* exports */
+/* ---------- export dialog ---------- */
+const EXP_CONTENTS = {
+  pdf: [
+    ['card-both', 'カード実寸（89.2×103.1mm）・両面（2ページ）'],
+    ['a4-front', 'A4・おもて面'],
+    ['a4-back', 'A4・うら面'],
+    ['a4-both', 'A4・両面（2ページ）'],
+  ],
+  png: [
+    ['front', 'おもて面（1053×1218px）'],
+    ['back', 'うら面（1053×1218px）'],
+    ['both', '両面（2ファイル）'],
+    ['a4-front', 'A4・おもて面（2480×3508px）'],
+    ['a4-back', 'A4・うら面（2480×3508px）'],
+    ['a4-both', 'A4・両面（2ファイル）'],
+  ],
+  jpg: [
+    ['front', 'おもて面（1053×1218px）'],
+    ['back', 'うら面（1053×1218px）'],
+    ['both', '両面（2ファイル）'],
+    ['a4-front', 'A4・おもて面（2480×3508px）'],
+    ['a4-back', 'A4・うら面（2480×3508px）'],
+    ['a4-both', 'A4・両面（2ファイル）'],
+  ],
+  print: [
+    ['current', '表示中の面'],
+    ['front', 'おもて面'],
+    ['back', 'うら面'],
+    ['both', '両面（2ページ）'],
+  ],
+};
+function updateExpPreview(){
+  const pages = buildExportPages();
+  const wrap = $('expPreviewImgs'); wrap.innerHTML = '';
+  for (const pg of pages){
+    const fig = document.createElement('figure');
+    const im = document.createElement('img');
+    im.src = pg.canvas.toDataURL('image/jpeg', 0.85);
+    im.alt = pg.label;
+    const cap = document.createElement('figcaption');
+    cap.textContent = `${pg.label}（${pg.wMm.toFixed(1)}×${pg.hMm.toFixed(1)}mm）`;
+    fig.appendChild(im); fig.appendChild(cap);
+    wrap.appendChild(fig);
+  }
+  $('expPreviewNote').textContent = pages.length ? `全${pages.length}ページ` : '';
+  $('expPreview').style.display = 'block';
+}
+function refreshExpDialog(){
+  const fmt = $('expFormat').value;
+  const sel = $('expContent'); const cur = sel.value;
+  sel.innerHTML = '';
+  for (const [v, t] of EXP_CONTENTS[fmt]){
+    const o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o);
+  }
+  if ([...sel.options].some(o => o.value === cur)) sel.value = cur;
+  const isPrint = fmt === 'print';
+  const usesA4 = isPrint ? $('printPaper').value === 'a4' : sel.value.startsWith('a4');
+  $('expPrintRow').style.display = isPrint ? 'block' : 'none';
+  $('expA4Row').style.display = usesA4 ? 'block' : 'none';
+  $('btnExpGo').textContent = isPrint ? '印刷する' : '書き出す';
+  const pages = buildExportPages();
+  const sizeNote = pages.length ? `選択中：${sel.options[sel.selectedIndex].textContent} ／ 全${pages.length}ページ ／ 1ページ ${pages[0].wMm.toFixed(1)}×${pages[0].hMm.toFixed(1)}mm` : '';
+  $('expDesc').textContent = `PDFと同じ配置のまま、画像（PNG／JPG）でも書き出せます。各ページは実寸・300 DPI相当で描かれます。カード実寸は ${MM_W.toFixed(1)}×${MM_H.toFixed(1)}mm（${W}×${H}px）、A4は 210×297mm（2480×3508px）です。A4では同じデザインを2個並べることもできます（「A4の配置」で選択）。点線の切り取りガイドは色反転で描かれるため、黒いデザインでは白く、白いデザインでは黒く見えます。ブラウザで印刷する場合はこちらがおすすめです。印刷結果が実寸より大きい／小さい場合は「サイズ補正（mm）」で調整してください（ブラウザ印刷では0.5mmほど大きく出ることがあります。まずは -0.5 にしてあります）。
+選択を変えると、書き出しレイアウトが下のプレビューに表示されます。
+${sizeNote}`;
+  updateExpPreview();
+}
+$('btnExportOpen').onclick = () => { refreshExpDialog(); $('expDlg').showModal(); };
+$('expFormat').onchange = refreshExpDialog;
+$('expContent').onchange = refreshExpDialog;
+$('printPaper').onchange = () => { if ($('expDlg').open) refreshExpDialog(); };
+$('printDup').onchange = () => { if ($('expDlg').open) refreshExpDialog(); };
+$('printGuide').onchange = () => { if ($('expDlg').open) refreshExpDialog(); };
+$('btnExpClose').onclick = () => $('expDlg').close();
+$('btnExpGo').onclick = async () => {
+  const fmt = $('expFormat').value;
+  if (fmt === 'print'){ await doPrint(); return; }
+  const pages = buildExportPages();
+  if (!pages.length) return;
+  if (fmt === 'pdf'){
+    const items = [];
+    for (const pg of pages){
+      const blob = await canvasJpg300(pg.canvas);
+      items.push({ jpg: new Uint8Array(await blob.arrayBuffer()), wMm: pg.wMm, hMm: pg.hMm, pxW: pg.canvas.width, pxH: pg.canvas.height });
+    }
+    download(makePdf(items), `jcard_${$('expContent').value}.pdf`);
+  } else {
+    for (let i = 0; i < pages.length; i++){
+      const pg = pages[i];
+      const sideEn = pg.label.includes('おもて') ? 'front' : 'back';
+      const base = pg.wMm > 200 ? `jcard_A4_${sideEn}_2480x3508_300dpi` : `jcard_${sideEn}_${W}x${H}_300dpi`;
+      if (fmt === 'png') download(await canvasPng300(pg.canvas), base + '.png');
+      else download(await canvasJpg300(pg.canvas), base + '.jpg');
+      if (i < pages.length - 1) await new Promise(r => setTimeout(r, 350));
+    }
+  }
+};
+
+/* both preview */
+$('btnBoth').onclick = () => {
+  $('capFront').textContent = `おもて面：${PANELS.front.map(pn => pn.name.replace(/ \S+$/, '')) .join(' ｜ ')}（${PANELS.front.map(pn => pn.w).join(' ｜ ')}）`;
+  $('capBack').textContent = `うら面：${PANELS.back.map(pn => pn.name.replace(/ \S+$/, '')).join(' ｜ ')}（${PANELS.back.map(pn => pn.w).join(' ｜ ')}）`;
+  $('bothFront').src = renderToCanvas('front').toDataURL('image/png');
+  $('bothBack').src = renderToCanvas('back').toDataURL('image/png');
+  $('bothDlg').showModal();
+};
+$('btnBothClose').onclick = () => $('bothDlg').close();
+
+/* print */
+let printJob = 0;
+(function initPrintAdjust(){
+  const saved = parseFloat(localStorage.getItem('jcard-print-adjust'));
+  if (Number.isFinite(saved)) $('printAdjust').value = saved;
+  $('printAdjust').addEventListener('change', () => {
+    const v = parseFloat($('printAdjust').value);
+    if (Number.isFinite(v)) localStorage.setItem('jcard-print-adjust', String(v));
+  });
+  const g = localStorage.getItem('jcard-print-guide');
+  if (g === 'off' || g === 'on') $('printGuide').value = g;
+  $('printGuide').addEventListener('change', () => localStorage.setItem('jcard-print-guide', $('printGuide').value));
+})();
+async function doPrint(){
+  const job = ++printJob;
+  const pv = $('expContent').value;
+  const sides = pv === 'both' ? ['front','back'] : pv === 'current' ? [state.side] : (pv === 'front' || pv === 'back') ? [pv] : [state.side];
+  const paper = $('printPaper').value;
+  const adj = parseFloat($('printAdjust').value) || 0;
+  const imgW = MM_W + adj, imgH = MM_H + adj;
+  const dup = paper === 'a4' && $('printDup').value === '2';
+  const copies = dup ? 2 : 1;
+  const area = $('printArea'); area.innerHTML = '';
+  const imgs = [];
+  for (const s of sides){
+    const page = document.createElement('div'); page.className = 'p-page';
+    const url = renderToCanvas(s).toDataURL('image/png');
+    if (paper === 'a4'){
+      page.style.width = '210mm'; page.style.height = '296.8mm';
+      page.style.display = 'flex'; page.style.justifyContent = 'center'; page.style.alignItems = 'center';
+      if (dup){ page.style.flexDirection = 'column'; page.style.gap = '6mm'; }
+      else { page.style.alignItems = 'flex-start'; page.style.paddingTop = '10mm'; }
+    } else {
+      page.style.width = MM_W + 'mm'; page.style.height = (MM_H - 0.2) + 'mm';
+      page.style.display = 'flex'; page.style.justifyContent = 'center'; page.style.alignItems = 'flex-start';
+    }
+    const guideOn = paper === 'a4' && $('printGuide').value !== 'off';
+    for (let k = 0; k < copies; k++){
+      const im = document.createElement('img');
+      im.src = url;
+      im.style.width = imgW + 'mm'; im.style.height = imgH + 'mm';
+      if (guideOn){
+        const wrap = document.createElement('div');
+        wrap.className = 'cutWrap';
+        wrap.style.width = imgW + 'mm'; wrap.style.height = imgH + 'mm';
+        im.style.width = '100%'; im.style.height = '100%';
+        const g = document.createElement('div');
+        g.className = 'cutGuide';
+        wrap.appendChild(im); wrap.appendChild(g);
+        page.appendChild(wrap);
+      } else {
+        page.appendChild(im);
+      }
+      imgs.push(im);
+    }
+    area.appendChild(page);
+  }
+  $('printPageStyle').textContent = paper === 'a4'
+    ? '@page{size:A4 portrait;margin:0}'
+    : `@page{size:${MM_W}mm ${MM_H}mm;margin:0}`;
+  await Promise.all(imgs.map(im => im.decode().catch(() => {})));
+  if (job !== printJob) return;
+  window.print();
+  setTimeout(() => { if (job === printJob){ area.innerHTML = ''; $('printPageStyle').textContent = ''; } }, 600);
+};
+
+/* project save / load */
+$('btnSave').onclick = () => {
+  const data = { app:'cassette-j-card-studio', version:3, template:curTpl, side:state.side,
+    panels:state.panels, spine:state.spine, texts:state.texts,
+    imgLayers:state.imgLayers, customFonts:state.customFonts, tracklist:state.tracklist, spineFill:state.spineFill };
+  download(new Blob([JSON.stringify(data)], { type:'application/json' }), 'jcard_project.json');
+};
+$('loadFile').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const data = JSON.parse(await f.text());
+    if (data.version !== 3){
+      // v2以前は表裏の面が逆だったため、パネルIDと面を入れ替えて引き継ぐ
+      const swapId = id => id.startsWith('front_') ? 'back_' + id.slice(6) : id.startsWith('back_') ? 'front_' + id.slice(5) : id;
+      if (data.panels){ const np = {}; for (const [k, v] of Object.entries(data.panels)) np[swapId(k)] = v; data.panels = np; }
+      if (data.texts) data.texts = { front:data.texts.back || [], back:data.texts.front || [] };
+      if (data.imgLayers) data.imgLayers = { front:data.imgLayers.back || [], back:data.imgLayers.front || [] };
+      if (data.tracklist && data.tracklist.panel) data.tracklist.panel = swapId(data.tracklist.panel);
+      if (data.side) data.side = data.side === 'front' ? 'back' : 'front';
+    }
+    applyTemplate(data.template === 'standard' ? 'standard' : 'jissun', false);
+    ALL_PANEL_IDS.forEach(id => { if (data.panels && data.panels[id]) state.panels[id] = Object.assign(defaultPanel(), data.panels[id]); });
+    if (data.spine) Object.assign(state.spine, data.spine);
+    if (data.texts) { state.texts.front = data.texts.front || []; state.texts.back = data.texts.back || []; }
+    if (data.tracklist) Object.assign(state.tracklist, data.tracklist);
+    if (data.spineFill) Object.assign(state.spineFill, data.spineFill);
+    // custom fonts
+    state.customFonts = Array.isArray(data.customFonts) ? data.customFonts : [];
+    for (const f of state.customFonts) await registerFont(f.name, f.data);
+    refreshFontSelects();
+    // image layers
+    state.imgLayers = { front:[], back:[] };
+    state.imgLayerObjs = {};
+    state.selectedImgLayer = null;
+    if (data.imgLayers){
+      for (const s of ['front','back']){
+        for (const l of (data.imgLayers[s] || [])){
+          state.imgLayers[s].push(l);
+          await new Promise(res => {
+            const im = new Image();
+            im.onload = () => { state.imgLayerObjs[l.id] = im; res(); };
+            im.onerror = () => res();
+            im.src = l.src;
+          });
+          const n = parseInt(String(l.id).replace(/\D/g, ''), 10);
+          if (Number.isFinite(n) && n >= imgLayerSeq) imgLayerSeq = n + 1;
+        }
+      }
+    }
+    // reload images
+    state.imgObjs = {};
+    await Promise.all(ALL_PANEL_IDS.filter(id => state.panels[id].img).map(id => new Promise(res => {
+      const im = new Image();
+      im.onload = () => { state.imgObjs[id] = im; res(); };
+      im.onerror = () => res();
+      im.src = state.panels[id].img;
+    })));
+    // reflect controls
+    $('spineTitle').value = state.spine.title; $('spineArtist').value = state.spine.artist;
+    $('spineSize').value = state.spine.size; $('spineSizeVal').textContent = state.spine.size + 'px';
+    if (data.spine && !('artistSize' in data.spine) && data.spine.size) state.spine.artistSize = Math.round(data.spine.size * 0.62);
+    $('spineArtistSize').value = state.spine.artistSize != null ? state.spine.artistSize : 58; $('spineArtistSizeVal').textContent = $('spineArtistSize').value + 'px';
+    if (state.spine.dir === 'vert') state.spine.dir = 'ccw';
+    $('spineColor').value = state.spine.color; $('spineDir').value = state.spine.dir;
+    refreshFontSelects();
+    if (state.customFonts.length) $('fontStatus').textContent = `読み込んだフォント：${state.customFonts.map(f => f.name).join('、')}（フォント欄で選べます）`;
+    $('tlOn').checked = state.tracklist.on; $('tlText').value = state.tracklist.text;
+    $('tlPanel').value = state.tracklist.panel || 'back_main';
+    $('tlSize').value = state.tracklist.size; $('tlSizeVal').textContent = state.tracklist.size + 'px';
+    $('tlColor').value = state.tracklist.color;
+    $('spineSpacing').value = state.spine.spacing || 0; $('spineSpacingVal').textContent = (state.spine.spacing || 0) + 'px';
+    if (data.spine && data.spine.pos && !('titlePos' in data.spine)){ state.spine.titlePos = data.spine.pos; state.spine.artistPos = data.spine.pos; }
+    $('spineTitlePos').value = state.spine.titlePos || 0; $('spineTitlePosVal').textContent = (state.spine.titlePos || 0) + 'px';
+    $('spineArtistPos').value = state.spine.artistPos || 0; $('spineArtistPosVal').textContent = (state.spine.artistPos || 0) + 'px';
+    $('spineCatalog').value = state.spine.catalog || '';
+    $('spineCatPos').value = state.spine.catPos != null ? state.spine.catPos : 60; $('spineCatPosVal').textContent = '下端から' + $('spineCatPos').value + 'px';
+    $('spineCatSize').value = state.spine.catalogSize || 36; $('spineCatSizeVal').textContent = (state.spine.catalogSize || 36) + 'px';
+    $('fillOn').checked = !!state.spineFill.on; $('fillColor').value = state.spineFill.color;
+    $('fillOp').value = Math.round(state.spineFill.op * 100); $('fillOpVal').textContent = Math.round(state.spineFill.op * 100) + '%';
+    $('tlSpacing').value = state.tracklist.spacing || 0; $('tlSpacingVal').textContent = (state.tracklist.spacing || 0) + 'px';
+    $('tlRot').value = state.tracklist.rot || 0; $('tlRotVal').textContent = (state.tracklist.rot || 0) + '°';
+    textSeq = 1000;
+    setSide(data.side === 'back' ? 'back' : 'front');
+  } catch(err){ alert('プロジェクトファイルを読み込めませんでした'); }
+  e.target.value = '';
+};
+
+refreshFontSelects();
+try { const savedTpl = localStorage.getItem('jcard-template'); if (savedTpl && TEMPLATES[savedTpl]) applyTemplate(savedTpl, false); } catch(e) {}
+setSide('front');
+requestAnimationFrame(fitZoom);
+</script>
+</body>
+</html>
