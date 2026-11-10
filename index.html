@@ -101,7 +101,7 @@ span[id$="Val"]{ cursor:pointer; border-bottom:1px dotted #8a8f98; }
 <header>
   <h1><span class="en">Cassette J Card Studio</span> カセットテープ Jカード作成</h1>
   <p id="sizeInfo">全体 1053 × 1218 px（300 DPI ＝ 89.15 × 103.12 mm）／ メイン 723px ・ 背 153px ・ 裏表紙 177px</p>
-  <span id="buildStamp">Build 2026-11-10 · v38</span>
+  <span id="buildStamp">Build 2026-11-10 · v39</span>
 </header>
 <main>
   <section class="previewCol">
@@ -282,6 +282,12 @@ Shiftキーを押しながらドラッグすると縦・横にまっすぐだけ
   <div class="row"><label style="min-width:130px">用紙サイズ・出力内容</label>
     <select id="expContent"></select>
   </div>
+  <div class="row"><label style="min-width:130px">折り線（パネルの境目）</label>
+    <select id="foldGuide">
+      <option value="on">入れる（色反転の点線）</option>
+      <option value="off">入れない</option>
+    </select>
+  </div>
   <div id="expPrintRow" style="display:none">
     <div class="row"><label style="min-width:130px">印刷の用紙</label>
       <select id="printPaper">
@@ -359,6 +365,7 @@ function applyTemplate(key, scale){
       if (opt.value === 'back_flap') opt.textContent = `裏表紙フラップ・うら（${flapMm}mm）`;
       if (opt.value === 'front_flap') opt.textContent = `裏表紙フラップ・おもて（表面・${flapMm}mm）`;
     } }
+  { const pp = $('printPaper'); if (pp && pp.options[1]) pp.options[1].textContent = `カード実寸（${MM_W.toFixed(1)}×${MM_H.toFixed(1)}mm）`; }
   $('tplSel').value = key;
   $('sizeInfo').textContent = `全体 ${W} × ${H} px（300 DPI ＝ ${MM_W} × ${MM_H} mm）／ メイン ${PANELS.front[2].w}px ・ 背 ${PANELS.front[1].w}px ・ 裏表紙 ${PANELS.front[0].w}px`;
   try { localStorage.setItem('jcard-template', key); } catch(e) {}
@@ -654,7 +661,17 @@ function renderMain(){
 
 function renderToCanvas(side){
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
-  render(cv.getContext('2d'), side, { guides:false, selection:false });
+  const c = cv.getContext('2d');
+  render(c, side, { guides:false, selection:false });
+  if (!$('foldGuide') || $('foldGuide').value !== 'off'){
+    c.save();
+    c.globalCompositeOperation = 'difference';
+    c.strokeStyle = '#ffffff'; c.lineWidth = 4; c.setLineDash([18, 12]);
+    for (const def of PANELS[side].slice(1)){
+      c.beginPath(); c.moveTo(def.x, 0); c.lineTo(def.x, H); c.stroke();
+    }
+    c.restore();
+  }
   return cv;
 }
 
@@ -1434,6 +1451,11 @@ let printJob = 0;
 (function initPrintAdjust(){
   const saved = parseFloat(localStorage.getItem('jcard-print-adjust'));
   if (Number.isFinite(saved)) $('printAdjust').value = saved;
+  try { const fg = localStorage.getItem('jcard-fold-guide'); if (fg && $('foldGuide')) $('foldGuide').value = fg; } catch(e) {}
+  $('foldGuide').addEventListener('change', () => {
+    try { localStorage.setItem('jcard-fold-guide', $('foldGuide').value); } catch(e) {}
+    if ($('expDlg').open) refreshExpDialog();
+  });
   $('printAdjust').addEventListener('change', () => {
     const v = parseFloat($('printAdjust').value);
     if (Number.isFinite(v)) localStorage.setItem('jcard-print-adjust', String(v));
