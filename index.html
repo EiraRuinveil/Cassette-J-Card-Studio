@@ -101,7 +101,7 @@ span[id$="Val"]{ cursor:pointer; border-bottom:1px dotted #8a8f98; }
 <header>
   <h1><span class="en">Cassette J Card Studio</span> カセットテープ Jカード作成</h1>
   <p id="sizeInfo">全体 1053 × 1218 px（300 DPI ＝ 89.15 × 103.12 mm）／ メイン 723px ・ 背 153px ・ 裏表紙 177px</p>
-  <span id="buildStamp">Build 2026-11-10 · v37</span>
+  <span id="buildStamp">Build 2026-11-10 · v38</span>
 </header>
 <main>
   <section class="previewCol">
@@ -250,6 +250,12 @@ Shiftキーを押しながらドラッグすると縦・横にまっすぐだけ
         <button class="btn" id="btnSave" type="button">プロジェクト保存</button>
         <label class="btn" style="min-width:0;cursor:pointer">プロジェクト読込<input type="file" id="loadFile" accept=".json,application/json" hidden></label>
       </div>
+      <div class="row">
+        <span style="font-size:12.5px;color:var(--sub)">テンプレート読込：</span>
+        <button class="btn" id="btnTplShort" type="button">ショートフラップ型</button>
+        <button class="btn" id="btnTplLong" type="button">ロングフラップ型</button>
+      </div>
+      <p class="hint">テンプレートはGitHubから直接読み込みます（今のデザインは置き換わります）。<a href="https://github.com/EiraRuinveil/Cassette-J-Card-Studio/tree/main" target="_blank" rel="noopener">GitHub / README（使い方・テンプレートのダウンロード）</a></p>
     </div>
   </aside>
 </main>
@@ -1496,10 +1502,8 @@ $('btnSave').onclick = () => {
     imgLayers:state.imgLayers, customFonts:state.customFonts, tracklist:state.tracklist, spineFill:state.spineFill };
   download(new Blob([JSON.stringify(data)], { type:'application/json' }), 'jcard_project.json');
 };
-$('loadFile').onchange = async e => {
-  const f = e.target.files[0]; if (!f) return;
+async function importProjectData(data){
   try {
-    const data = JSON.parse(await f.text());
     if (data.version !== 3){
       // v2以前は表裏の面が逆だったため、パネルIDと面を入れ替えて引き継ぐ
       const swapId = id => id.startsWith('front_') ? 'back_' + id.slice(6) : id.startsWith('back_') ? 'front_' + id.slice(5) : id;
@@ -1573,8 +1577,23 @@ $('loadFile').onchange = async e => {
     textSeq = 1000;
     setSide(data.side === 'back' ? 'back' : 'front');
   } catch(err){ alert('プロジェクトファイルを読み込めませんでした'); }
+}
+$('loadFile').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try { await importProjectData(JSON.parse(await f.text())); }
+  catch(err){ alert('プロジェクトファイルを読み込めませんでした'); }
   e.target.value = '';
 };
+async function loadTemplate(name, file){
+  if (!confirm(`テンプレート「${name}」を読み込みます。今のデザインは置き換わります。よろしいですか？`)) return;
+  try {
+    const res = await fetch('https://raw.githubusercontent.com/EiraRuinveil/Cassette-J-Card-Studio/main/' + file);
+    if (!res.ok) throw new Error('fetch failed');
+    await importProjectData(await res.json());
+  } catch(err){ alert('テンプレートを読み込めませんでした（通信環境をご確認ください）'); }
+}
+$('btnTplShort').onclick = () => loadTemplate('ショートフラップ型', 'jcard_shortflap_front_.json');
+$('btnTplLong').onclick = () => loadTemplate('ロングフラップ型', 'jcard_longflap_front_.json');
 
 refreshFontSelects();
 try { const savedTpl = localStorage.getItem('jcard-template'); if (savedTpl && TEMPLATES[savedTpl]) applyTemplate(savedTpl, false); } catch(e) {}
