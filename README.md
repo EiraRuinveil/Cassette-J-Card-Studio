@@ -5,7 +5,7 @@
 ## 起動方法
 
 [https://eiraruinveil.github.io/Cassette-J-Card-Studio/](https://eiraruinveil.github.io/Cassette-J-Card-Studio/)
-を開いてください。HTMLファイル1つで動作するアプリで、画像処理はブラウザー内で行われます。
+を開いてください。HTMLファイル1つで動作するアプリで、画像処理はブラウザー内で行われます。画面右上のボタンで日本語と英語を切り替えられます（設定は保存されます）。
 
 リポジトリ：[https://github.com/EiraRuinveil/Cassette-J-Card-Studio](https://github.com/EiraRuinveil/Cassette-J-Card-Studio)
 
